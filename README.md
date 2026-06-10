@@ -50,6 +50,33 @@ pytest
 No model result is reported until it has been measured on an untouched
 out-of-time test period.
 
+## Reproduce the Current Pipeline
+
+The committed fixture provides an offline smoke test for the complete Phase 0/1
+build:
+
+```bash
+nba-forecast build-games \
+  --raw-csv tests/fixtures/team_game_rows.csv \
+  --output-dir /tmp/nba-forecast-smoke
+```
+
+Expected outputs:
+
+```text
+/tmp/nba-forecast-smoke/processed/games.parquet
+/tmp/nba-forecast-smoke/nba_forecast.duckdb
+```
+
+Populate one raw source cache when network access is available:
+
+```bash
+nba-forecast fetch-games \
+  --season 2025-26 \
+  --season-type "Regular Season" \
+  --cache-dir data/raw
+```
+
 ## Documentation
 
 - [Product requirements and system design](docs/superpowers/specs/2026-06-10-nba-forecast-lab-design.md)
@@ -57,6 +84,7 @@ out-of-time test period.
 - [Architecture](docs/architecture.md)
 - [Data dictionary](docs/data_dictionary.md)
 - [Storage decision](docs/decisions/0001-data-storage.md)
+- [Data pipeline runbook](docs/runbook.md)
 
 ## Attribution and Limitations
 
@@ -65,4 +93,3 @@ Source availability, rate limits, data completeness, and usage restrictions
 will be documented as the pipeline is verified.
 
 This project does not provide betting advice and does not claim profitability.
-

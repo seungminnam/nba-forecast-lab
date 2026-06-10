@@ -31,6 +31,31 @@ hand.
 Metadata records the endpoint, season, season type, fetch timestamp, and source
 row count.
 
+Fetch or reuse one raw cache:
+
+```bash
+nba-forecast fetch-games \
+  --season 2025-26 \
+  --season-type "Regular Season" \
+  --cache-dir data/raw
+```
+
+Use `--force` only when an intentional source refresh should replace the
+existing raw extract.
+
+## Build Canonical Games
+
+Build from any source-shaped raw CSV:
+
+```bash
+nba-forecast build-games \
+  --raw-csv tests/fixtures/team_game_rows.csv \
+  --output-dir /tmp/nba-forecast-smoke
+```
+
+The command transforms and validates the rows before writing
+`processed/games.parquet` and `nba_forecast.duckdb`.
+
 ## Failure Recovery
 
 - If NBA Stats is unavailable, retain and use the existing raw cache.
@@ -38,4 +63,3 @@ row count.
   retain the previous known-good extract and investigate source coverage.
 - If canonical validation fails, read every rule failure in the exception
   before changing transformation logic or accepting the source data.
-
