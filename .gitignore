@@ -1,0 +1,17 @@
+.DS_Store
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.superpowers/
+.venv/
+__pycache__/
+*.egg-info/
+*.py[cod]
+
+artifacts/
+data/raw/
+data/processed/
+data/features/
+data/predictions/
+*.duckdb
+

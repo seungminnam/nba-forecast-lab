@@ -1,0 +1,138 @@
+# NBA Forecast Lab
+
+NBA Forecast Lab is a documentation-first, end-to-end machine learning project
+for calibrated NBA pre-game win probabilities and playoff series simulation.
+
+The project is under active development. The repository now provides a
+reproducible historical data pipeline, leakage-safe pre-game features, and
+time-aware baseline evaluation. No historical model performance claim is made
+until the full multi-season experiment is run.
+
+## Research Question
+
+> Using only information available before tip-off, how accurately can NBA game
+> win probabilities be predicted, and how can those probabilities support
+> playoff series simulations?
+
+## Planned Product
+
+- Leakage-safe team features and time-aware validation
+- Elo, Logistic Regression, and XGBoost probability comparisons
+- Probability calibration using Platt scaling and Isotonic Regression
+- `as_of_date` historical replay
+- Best-of-seven Monte Carlo simulations
+- A deployed Streamlit dashboard
+
+## Current Architecture
+
+```text
+NBA Stats team-game rows
+        |
+        v
+immutable raw cache -> canonical games -> validation -> Parquet + DuckDB
+                                                        |
+                                                        v
+                                           features, models, simulation
+```
+
+## Current Verified Status
+
+- Cache-first `nba_api` source adapter with adjacent source metadata
+- Canonical one-row-per-game transformation and validation
+- Parquet and DuckDB processed storage
+- Offline fixture build and network-free automated tests
+- Live source smoke test: 2,460 NBA Stats team rows transformed into 1,230
+  canonical 2025-26 regular-season games
+- Shifted rolling team state and sequential pre-game Elo
+- Explicit season holdouts and comparable probability baseline metrics
+
+## Measured Baseline Result
+
+On the untouched 2025-26 regular season, the current Logistic Regression
+baseline achieved:
+
+| Brier Score | Log Loss | ROC-AUC | Accuracy |
+|---:|---:|---:|---:|
+| **0.20649** | **0.60051** | **0.73357** | **0.68293** |
+
+It reduced Brier Score by **3.33%** relative to the Elo baseline. XGBoost and
+probability calibration have not yet been selected or evaluated.
+
+## Development Setup
+
+Python 3.9 or newer is required.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+ruff check .
+mypy src
+pytest
+```
+
+No model result is reported until it has been measured on an untouched
+out-of-time test period.
+
+## Reproduce the Current Pipeline
+
+The committed fixture provides an offline smoke test for the complete Phase 0/1
+build:
+
+```bash
+nba-forecast build-games \
+  --raw-csv tests/fixtures/team_game_rows.csv \
+  --output-dir /tmp/nba-forecast-smoke
+```
+
+`--raw-csv` accepts multiple season files, so a complete historical build can
+combine the season-level raw caches in one command.
+
+Expected outputs:
+
+```text
+/tmp/nba-forecast-smoke/processed/games.parquet
+/tmp/nba-forecast-smoke/nba_forecast.duckdb
+```
+
+Populate one raw source cache when network access is available:
+
+```bash
+nba-forecast fetch-games \
+  --season 2025-26 \
+  --season-type "Regular Season" \
+  --cache-dir data/raw
+```
+
+Build pre-game features and evaluate baselines with explicit season holdouts:
+
+```bash
+nba-forecast build-features \
+  --games-parquet data/processed/games.parquet \
+  --output-dir data
+
+nba-forecast evaluate-baselines \
+  --features-parquet data/features/games.parquet \
+  --train-seasons 22015 22016 22017 22018 22019 22020 22021 22022 22023 22024 \
+  --test-season 22025 \
+  --output-dir .
+```
+
+## Documentation
+
+- [Product requirements and system design](docs/superpowers/specs/2026-06-10-nba-forecast-lab-design.md)
+- [Phase 0/1 implementation plan](docs/superpowers/plans/2026-06-10-phase-0-1-foundation-data.md)
+- [Architecture](docs/architecture.md)
+- [Data dictionary](docs/data_dictionary.md)
+- [Storage decision](docs/decisions/0001-data-storage.md)
+- [Data pipeline runbook](docs/runbook.md)
+- [NBA Stats source report](docs/source_report.md)
+
+## Attribution and Limitations
+
+The primary planned source is the NBA Stats API accessed through `nba_api`.
+Source availability, rate limits, data completeness, and usage restrictions
+will be documented as the pipeline is verified.
+
+This project does not provide betting advice and does not claim profitability.
