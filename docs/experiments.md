@@ -18,7 +18,17 @@ target because the product emits probabilities for simulation.
 
 ## Current Results
 
-No historical model comparison has been completed yet. This document will
-record each reproducible configuration, data window, metrics, and selection
-decision without replacing earlier results.
+The baseline evaluation interface is implemented and tested on deterministic
+fixtures. A historical multi-season comparison has not been completed yet.
 
+Implemented baseline definitions:
+
+| Model | Probability definition |
+|---|---|
+| Constant home rate | Mean home-win outcome in the supplied training period |
+| Season win percentage | `0.5 + (home win pct - away win pct) / 2` |
+| Elo | Sequential pre-game Elo probability with home advantage |
+| Logistic Regression | Median imputation, standardization, and regularized Logistic Regression |
+
+This document will record each historical configuration, data window, metrics,
+and selection decision without replacing earlier results.
