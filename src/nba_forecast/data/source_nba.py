@@ -1,6 +1,7 @@
 """Cache-first access to NBA Stats team-game records."""
 
 import json
+from collections.abc import Sequence
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Optional
@@ -59,6 +60,29 @@ def load_or_fetch_team_games(
     return _read_raw_csv(cache_path)
 
 
+def load_or_fetch_history(
+    seasons: Sequence[str],
+    season_types: Sequence[str],
+    cache_dir: Path,
+    *,
+    force: bool = False,
+    fetcher: Optional[Fetcher] = None,
+) -> list[Path]:
+    """Populate and return stable raw-cache paths for historical requests."""
+    paths: list[Path] = []
+    for season in seasons:
+        for season_type in season_types:
+            load_or_fetch_team_games(
+                season,
+                season_type,
+                cache_dir,
+                force=force,
+                fetcher=fetcher,
+            )
+            paths.append(raw_cache_path(cache_dir, season, season_type))
+    return paths
+
+
 def _read_raw_csv(cache_path: Path) -> pd.DataFrame:
     return pd.read_csv(
         cache_path,
@@ -74,4 +98,3 @@ def _fetch_league_game_finder(season: str, season_type: str) -> pd.DataFrame:
         season_type_nullable=season_type,
     )
     return response.get_data_frames()[0]
-

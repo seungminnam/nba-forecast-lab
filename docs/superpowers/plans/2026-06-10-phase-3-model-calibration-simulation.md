@@ -21,17 +21,17 @@
 - Modify: `docs/source_report.md`
 - Modify: `docs/experiments.md`
 
-- [ ] **Step 1: Write failing multi-season fetch tests**
+- [x] **Step 1: Write failing multi-season fetch tests**
 
 Assert a cache-first history function requests every supplied season and season
 type, reuses existing caches, and returns stable raw paths.
 
-- [ ] **Step 2: Implement and expose `fetch-history`**
+- [x] **Step 2: Implement and expose `fetch-history`**
 
 Expose a command that fetches configured historical seasons and prints source
 row counts without combining or mutating raw extracts.
 
-- [ ] **Step 3: Fetch and build real historical regular-season data**
+- [x] **Step 3: Fetch and build real historical regular-season data**
 
 Fetch 2015-16 through 2025-26, combine raw files into canonical games, build
 features, and evaluate current baselines using:
@@ -42,12 +42,12 @@ Validation: 2024-25
 Test: 2025-26
 ```
 
-- [ ] **Step 4: Record measured source coverage and baseline results**
+- [x] **Step 4: Record measured source coverage and baseline results**
 
 Record commands, row counts, date range, split sizes, and metrics in source and
 experiment documentation. Do not commit generated data.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```bash
 git commit -m "feat: backfill and evaluate historical nba baselines"
@@ -190,4 +190,3 @@ pytest
 ```bash
 git commit -m "docs: finalize calibrated model and simulator workflow"
 ```
-

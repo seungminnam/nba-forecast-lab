@@ -35,3 +35,10 @@ nba_forecast.duckdb
 
 The processed writer validates the canonical table before either artifact is
 updated.
+
+## Runtime Compatibility Note
+
+The project pins NumPy below version 2 for compatibility with the local macOS
+Python 3.9 analytical stack. NumPy 2.0.2 emitted incorrect matrix-multiplication
+RuntimeWarnings despite finite, bounded inputs and coefficients during
+Logistic Regression prediction.

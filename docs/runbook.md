@@ -44,6 +44,17 @@ nba-forecast fetch-games \
 Use `--force` only when an intentional source refresh should replace the
 existing raw extract.
 
+Fetch all configured historical regular seasons:
+
+```bash
+nba-forecast fetch-history \
+  --season-types "Regular Season" \
+  --cache-dir data/raw
+```
+
+`fetch-history` is also cache-first. It requests only missing files unless
+`--force` is supplied.
+
 ## Build Canonical Games
 
 Build from any source-shaped raw CSV:

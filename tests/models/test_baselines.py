@@ -33,6 +33,7 @@ def test_logistic_regression_returns_bounded_probabilities() -> None:
 
     assert len(probabilities) == 2
     assert probabilities.between(0, 1, inclusive="neither").all()
+    assert model.named_steps["classifier"].solver == "liblinear"
 
 
 def _model_frame(rows: int) -> pd.DataFrame:
@@ -42,4 +43,3 @@ def _model_frame(rows: int) -> pd.DataFrame:
     }
     data["home_win"] = [index % 2 for index in range(rows)]
     return pd.DataFrame(data)
-

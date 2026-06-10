@@ -46,6 +46,18 @@ immutable raw cache -> canonical games -> validation -> Parquet + DuckDB
 - Shifted rolling team state and sequential pre-game Elo
 - Explicit season holdouts and comparable probability baseline metrics
 
+## Measured Baseline Result
+
+On the untouched 2025-26 regular season, the current Logistic Regression
+baseline achieved:
+
+| Brier Score | Log Loss | ROC-AUC | Accuracy |
+|---:|---:|---:|---:|
+| **0.20649** | **0.60051** | **0.73357** | **0.68293** |
+
+It reduced Brier Score by **3.33%** relative to the Elo baseline. XGBoost and
+probability calibration have not yet been selected or evaluated.
+
 ## Development Setup
 
 Python 3.9 or newer is required.

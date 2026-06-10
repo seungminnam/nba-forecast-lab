@@ -3,6 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 from nba_forecast.cli import main
+from nba_forecast.data.source_nba import raw_cache_path
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "team_game_rows.csv"
 MULTI_SEASON_FIXTURE_PATH = (
@@ -113,3 +114,28 @@ def test_feature_and_baseline_commands_create_reproducible_outputs(
         "elo",
         "logistic_regression",
     ]
+
+
+def test_fetch_history_command_reuses_existing_season_caches(
+    tmp_path: Path,
+) -> None:
+    rows = pd.read_csv(MULTI_SEASON_FIXTURE_PATH)
+    for season in ("2024-25", "2025-26"):
+        path = raw_cache_path(tmp_path, season, "Regular Season")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        rows.to_csv(path, index=False)
+
+    exit_code = main(
+        [
+            "fetch-history",
+            "--seasons",
+            "2024-25",
+            "2025-26",
+            "--season-types",
+            "Regular Season",
+            "--cache-dir",
+            str(tmp_path),
+        ]
+    )
+
+    assert exit_code == 0

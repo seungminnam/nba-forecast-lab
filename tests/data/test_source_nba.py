@@ -4,6 +4,7 @@ from pathlib import Path
 import pandas as pd
 
 from nba_forecast.data.source_nba import (
+    load_or_fetch_history,
     load_or_fetch_team_games,
     raw_cache_path,
 )
@@ -112,3 +113,40 @@ def test_raw_cache_path_is_stable(tmp_path: Path) -> None:
         / "regular-season.csv"
     )
 
+
+def test_load_or_fetch_history_returns_stable_paths_for_all_requests(
+    tmp_path: Path,
+) -> None:
+    calls: list[tuple[str, str]] = []
+
+    def fetcher(season: str, season_type: str) -> pd.DataFrame:
+        calls.append((season, season_type))
+        return _source_rows(110)
+
+    paths = load_or_fetch_history(
+        ["2024-25", "2025-26"],
+        ["Regular Season", "Playoffs"],
+        tmp_path,
+        fetcher=fetcher,
+    )
+
+    assert calls == [
+        ("2024-25", "Regular Season"),
+        ("2024-25", "Playoffs"),
+        ("2025-26", "Regular Season"),
+        ("2025-26", "Playoffs"),
+    ]
+    assert paths == [
+        raw_cache_path(tmp_path, "2024-25", "Regular Season"),
+        raw_cache_path(tmp_path, "2024-25", "Playoffs"),
+        raw_cache_path(tmp_path, "2025-26", "Regular Season"),
+        raw_cache_path(tmp_path, "2025-26", "Playoffs"),
+    ]
+
+    load_or_fetch_history(
+        ["2024-25", "2025-26"],
+        ["Regular Season", "Playoffs"],
+        tmp_path,
+        fetcher=fetcher,
+    )
+    assert len(calls) == 4

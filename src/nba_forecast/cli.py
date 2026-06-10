@@ -7,8 +7,8 @@ from typing import Optional
 
 import pandas as pd
 
-from nba_forecast.config import RAW_DATA_DIR
-from nba_forecast.data.source_nba import load_or_fetch_team_games
+from nba_forecast.config import HISTORICAL_SEASONS, RAW_DATA_DIR
+from nba_forecast.data.source_nba import load_or_fetch_history, load_or_fetch_team_games
 from nba_forecast.data.storage import write_processed_games
 from nba_forecast.data.transform import team_rows_to_games
 from nba_forecast.evaluation.baselines import evaluate_baselines
@@ -27,6 +27,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return _fetch_games(
             args.season,
             args.season_type,
+            args.cache_dir,
+            args.force,
+        )
+    if args.command == "fetch-history":
+        return _fetch_history(
+            args.seasons,
+            args.season_types,
             args.cache_dir,
             args.force,
         )
@@ -63,6 +70,23 @@ def _build_parser() -> argparse.ArgumentParser:
     fetch_parser.add_argument("--season-type", default="Regular Season")
     fetch_parser.add_argument("--cache-dir", type=Path, default=RAW_DATA_DIR)
     fetch_parser.add_argument("--force", action="store_true")
+
+    history_parser = subparsers.add_parser(
+        "fetch-history",
+        help="Populate raw caches for multiple seasons and season types.",
+    )
+    history_parser.add_argument(
+        "--seasons",
+        nargs="+",
+        default=list(HISTORICAL_SEASONS),
+    )
+    history_parser.add_argument(
+        "--season-types",
+        nargs="+",
+        default=["Regular Season"],
+    )
+    history_parser.add_argument("--cache-dir", type=Path, default=RAW_DATA_DIR)
+    history_parser.add_argument("--force", action="store_true")
 
     feature_parser = subparsers.add_parser(
         "build-features",
@@ -116,6 +140,23 @@ def _fetch_games(
         force=force,
     )
     print(f"Cached {len(rows)} team-game rows for {season} {season_type}")
+    return 0
+
+
+def _fetch_history(
+    seasons: list[str],
+    season_types: list[str],
+    cache_dir: Path,
+    force: bool,
+) -> int:
+    paths = load_or_fetch_history(
+        seasons,
+        season_types,
+        cache_dir,
+        force=force,
+    )
+    row_count = sum(len(pd.read_csv(path)) for path in paths)
+    print(f"Cached {row_count} team-game rows across {len(paths)} raw files")
     return 0
 
 

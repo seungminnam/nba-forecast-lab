@@ -36,7 +36,10 @@ def fit_logistic_regression(train: pd.DataFrame) -> Pipeline:
         [
             ("imputer", SimpleImputer(strategy="median")),
             ("scaler", StandardScaler()),
-            ("classifier", LogisticRegression(max_iter=1000)),
+            (
+                "classifier",
+                LogisticRegression(max_iter=1000, solver="liblinear"),
+            ),
         ]
     )
     model.fit(train[list(MODEL_FEATURE_COLUMNS)], train["home_win"])
@@ -54,4 +57,3 @@ def logistic_regression_probability(
 
 def _clip(probabilities: pd.Series) -> pd.Series:
     return probabilities.clip(PROBABILITY_EPSILON, 1 - PROBABILITY_EPSILON)
-
