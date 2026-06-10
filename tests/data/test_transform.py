@@ -31,6 +31,10 @@ def test_team_rows_to_games_pairs_home_and_away_rows(
     assert first_game["home_win"] == 1
     assert first_game["home_points"] == 110
     assert first_game["away_points"] == 101
+    assert first_game["home_fga"] == 88
+    assert first_game["away_fga"] == 91
+    assert first_game["home_oreb"] == 10
+    assert first_game["away_tov"] == 15
 
     second_game = games.iloc[1]
     assert second_game["home_team_id"] == 3

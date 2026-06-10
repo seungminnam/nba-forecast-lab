@@ -24,6 +24,11 @@ home-team row and one away-team row.
 | `MATCHUP` | Contains `vs.` for home or `@` for away |
 | `WL` | Team result, `W` or `L` |
 | `PTS` | Team final points |
+| `FGA` | Team field-goal attempts |
+| `FGM` | Team made field goals |
+| `FTA` | Team free-throw attempts |
+| `OREB` | Team offensive rebounds |
+| `TOV` | Team turnovers |
 
 ## Canonical Completed Game Contract
 
@@ -38,6 +43,11 @@ home-team row and one away-team row.
 | `away_team_abbreviation` | string | Away team abbreviation | Yes |
 | `home_points` | integer | Home final score | No |
 | `away_points` | integer | Away final score | No |
+| `home_fga`, `away_fga` | integer | Team field-goal attempts | No |
+| `home_fgm`, `away_fgm` | integer | Team made field goals | No |
+| `home_fta`, `away_fta` | integer | Team free-throw attempts | No |
+| `home_oreb`, `away_oreb` | integer | Team offensive rebounds | No |
+| `home_tov`, `away_tov` | integer | Team turnovers | No |
 | `home_win` | integer | `1` when home team won, else `0` | No |
 
 Final scores and outcomes are labels or historical feature inputs only after

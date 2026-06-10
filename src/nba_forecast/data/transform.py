@@ -66,6 +66,16 @@ def team_rows_to_games(team_rows: pd.DataFrame) -> pd.DataFrame:
                 "away_team_abbreviation": str(away["TEAM_ABBREVIATION"]),
                 "home_points": int(home["PTS"]),
                 "away_points": int(away["PTS"]),
+                "home_fga": int(home["FGA"]),
+                "away_fga": int(away["FGA"]),
+                "home_fgm": int(home["FGM"]),
+                "away_fgm": int(away["FGM"]),
+                "home_fta": int(home["FTA"]),
+                "away_fta": int(away["FTA"]),
+                "home_oreb": int(home["OREB"]),
+                "away_oreb": int(away["OREB"]),
+                "home_tov": int(home["TOV"]),
+                "away_tov": int(away["TOV"]),
                 "home_win": int(home["WL"] == "W"),
             }
         )
