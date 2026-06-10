@@ -44,3 +44,11 @@ Final scores and outcomes are labels or historical feature inputs only after
 their game is complete. They must never appear in that game's pre-game feature
 row.
 
+## Canonical Transformation Rules
+
+- Each `GAME_ID` must contain exactly two source rows.
+- A `MATCHUP` containing `vs.` identifies the home-team row.
+- A `MATCHUP` containing `@` identifies the away-team row.
+- Home and away rows must have different team identifiers and matching game
+  dates and season identifiers.
+- Canonical games are sorted by game date and game identifier.
