@@ -52,3 +52,21 @@ Only validated canonical games are persisted. The writer atomically replaces
 `processed/games.parquet`, then creates or replaces the DuckDB `games` table.
 Parquet is the durable processed artifact; DuckDB is the local analytical query
 surface.
+
+## Feature and Baseline Flow
+
+```text
+processed/games.parquet
+        |
+        v
+shifted team state + sequential pre-game Elo
+        |
+        v
+features/games.parquet
+        |
+        v
+explicit season holdout -> comparable baseline_metrics.csv
+```
+
+The feature table stores identifiers and the target for evaluation, but trained
+models receive only the authoritative `MODEL_FEATURE_COLUMNS` list.

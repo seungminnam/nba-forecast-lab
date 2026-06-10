@@ -3,9 +3,10 @@
 NBA Forecast Lab is a documentation-first, end-to-end machine learning project
 for calibrated NBA pre-game win probabilities and playoff series simulation.
 
-The project is under active development. Phase 0/1 now provides a reproducible,
-validated historical game-data pipeline. Feature engineering and modeling are
-the next phase; no model performance claims have been made.
+The project is under active development. The repository now provides a
+reproducible historical data pipeline, leakage-safe pre-game features, and
+time-aware baseline evaluation. No historical model performance claim is made
+until the full multi-season experiment is run.
 
 ## Research Question
 
@@ -42,6 +43,8 @@ immutable raw cache -> canonical games -> validation -> Parquet + DuckDB
 - Offline fixture build and network-free automated tests
 - Live source smoke test: 2,460 NBA Stats team rows transformed into 1,230
   canonical 2025-26 regular-season games
+- Shifted rolling team state and sequential pre-game Elo
+- Explicit season holdouts and comparable probability baseline metrics
 
 ## Development Setup
 
@@ -71,6 +74,9 @@ nba-forecast build-games \
   --output-dir /tmp/nba-forecast-smoke
 ```
 
+`--raw-csv` accepts multiple season files, so a complete historical build can
+combine the season-level raw caches in one command.
+
 Expected outputs:
 
 ```text
@@ -85,6 +91,20 @@ nba-forecast fetch-games \
   --season 2025-26 \
   --season-type "Regular Season" \
   --cache-dir data/raw
+```
+
+Build pre-game features and evaluate baselines with explicit season holdouts:
+
+```bash
+nba-forecast build-features \
+  --games-parquet data/processed/games.parquet \
+  --output-dir data
+
+nba-forecast evaluate-baselines \
+  --features-parquet data/features/games.parquet \
+  --train-seasons 22015 22016 22017 22018 22019 22020 22021 22022 22023 22024 \
+  --test-season 22025 \
+  --output-dir .
 ```
 
 ## Documentation

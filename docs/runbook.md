@@ -57,6 +57,9 @@ nba-forecast build-games \
 The command transforms and validates the rows before writing
 `processed/games.parquet` and `nba_forecast.duckdb`.
 
+`--raw-csv` accepts one or more paths. Pass all season-level source caches to
+build the combined historical game table used by temporal evaluation.
+
 ## Verify Processed Output
 
 Query the local DuckDB artifact:
@@ -66,6 +69,30 @@ python -c "import duckdb; print(duckdb.connect('/tmp/nba-forecast-smoke/nba_fore
 ```
 
 The committed fixture build should report exactly two canonical games.
+
+## Build Point-in-Time Features
+
+```bash
+nba-forecast build-features \
+  --games-parquet data/processed/games.parquet \
+  --output-dir data
+```
+
+The command writes `data/features/games.parquet`. Current-game outcomes and
+scores are not included in `MODEL_FEATURE_COLUMNS`.
+
+## Evaluate Baselines
+
+```bash
+nba-forecast evaluate-baselines \
+  --features-parquet data/features/games.parquet \
+  --train-seasons 22022 22023 22024 \
+  --test-season 22025 \
+  --output-dir .
+```
+
+The command rejects overlapping or reversed temporal splits and writes
+`artifacts/reports/baseline_metrics.csv`.
 
 ## Failure Recovery
 

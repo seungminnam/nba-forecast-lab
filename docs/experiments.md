@@ -18,8 +18,10 @@ target because the product emits probabilities for simulation.
 
 ## Current Results
 
-The baseline evaluation interface is implemented and tested on deterministic
-fixtures. A historical multi-season comparison has not been completed yet.
+The baseline evaluation interface and complete offline CLI workflow are
+implemented and tested on deterministic multi-season fixtures. Fixture metrics
+validate plumbing only and are not reported as model performance. A historical
+multi-season comparison has not been completed yet.
 
 Implemented baseline definitions:
 
