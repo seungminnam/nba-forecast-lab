@@ -75,3 +75,22 @@ row.
 - Completed games contain both final scores.
 - `home_win` contains only `0` or `1`.
 - Validation reports all detected rule failures in one actionable error.
+
+## Pre-Game Team State
+
+Each completed game creates one team-perspective row for the home team and one
+for the away team. Completed-game ratings are historical inputs only for later
+games.
+
+| Feature | Meaning |
+|---|---|
+| `games_played` | Earlier games played by this team in the season |
+| `season_win_pct` | Shifted expanding season win percentage; neutral `0.5` before game one |
+| `rest_days` | Days since the team's previous game |
+| `is_back_to_back` | `1` when `rest_days == 1` |
+| `win_pct_5/10/20` | Shifted rolling win percentage |
+| `offensive_rating_5/10/20` | Shifted rolling points per 100 estimated possessions |
+| `defensive_rating_5/10/20` | Shifted rolling opponent points per 100 estimated possessions |
+| `net_rating_5/10/20` | Shifted rolling offensive minus defensive rating |
+
+Estimated possessions use `FGA + 0.44 * FTA - OREB + TOV`.
