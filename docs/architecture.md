@@ -35,3 +35,9 @@ reliable when the source is unavailable.
 Future feature generation must consume the canonical game contract rather than
 source-shaped NBA Stats rows.
 
+## Persistence Contract
+
+Only validated canonical games are persisted. The writer atomically replaces
+`processed/games.parquet`, then creates or replaces the DuckDB `games` table.
+Parquet is the durable processed artifact; DuckDB is the local analytical query
+surface.

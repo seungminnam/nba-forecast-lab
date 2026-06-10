@@ -24,3 +24,14 @@ metadata.
   deferred. A managed database can be reconsidered if daily operation requires
   it.
 
+## Implemented Paths
+
+Given a configured data output directory, Phase 0/1 writes:
+
+```text
+processed/games.parquet
+nba_forecast.duckdb
+```
+
+The processed writer validates the canonical table before either artifact is
+updated.
