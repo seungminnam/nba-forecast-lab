@@ -35,6 +35,13 @@ reliable when the source is unavailable.
 Future feature generation must consume the canonical game contract rather than
 source-shaped NBA Stats rows.
 
+## Source Cache Contract
+
+NBA Stats access is cache-first. Each `LeagueGameFinder` season and season-type
+request maps to a stable raw CSV and adjacent metadata JSON. Network access
+occurs only when the cache is missing or a force refresh is explicitly
+requested. Tests inject a fetcher and never access the network.
+
 ## Persistence Contract
 
 Only validated canonical games are persisted. The writer atomically replaces
