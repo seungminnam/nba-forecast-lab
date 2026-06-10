@@ -16,6 +16,9 @@ before that game's tip-off.
   before one exists.
 - Rest days compare the current game date with the team's previous game date.
 - Back-to-back is true only when rest days equal one.
+- Elo rows expose both teams' ratings and probability before the current
+  result updates either rating.
+- Home-minus-away model rows join only pre-game team state and pre-game Elo.
 
 ## Mutation-Based Regression Test
 
@@ -27,4 +30,3 @@ state, and verifies:
 3. Later feature rows reflect the changed history.
 
 This test protects the point-in-time contract as feature logic evolves.
-

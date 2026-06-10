@@ -94,3 +94,13 @@ games.
 | `net_rating_5/10/20` | Shifted rolling offensive minus defensive rating |
 
 Estimated possessions use `FGA + 0.44 * FTA - OREB + TOV`.
+
+## Pre-Game Model Rows
+
+Each model row contains game identifiers, the `home_win` target, pre-game Elo,
+and home-minus-away differences for games played, win percentage, rest days,
+and rolling ratings. Home and away back-to-back indicators remain separate
+binary features.
+
+`MODEL_FEATURE_COLUMNS` is the authoritative list supplied to trained models.
+It excludes identifiers, current-game scores, and the `home_win` target.
