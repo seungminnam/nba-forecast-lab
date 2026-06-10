@@ -11,6 +11,7 @@ deployment workflows.
 ```bash
 python -m venv .venv
 source .venv/bin/activate
+python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 ```
 
@@ -55,6 +56,16 @@ nba-forecast build-games \
 
 The command transforms and validates the rows before writing
 `processed/games.parquet` and `nba_forecast.duckdb`.
+
+## Verify Processed Output
+
+Query the local DuckDB artifact:
+
+```bash
+python -c "import duckdb; print(duckdb.connect('/tmp/nba-forecast-smoke/nba_forecast.duckdb').execute('select count(*) from games').fetchone())"
+```
+
+The committed fixture build should report exactly two canonical games.
 
 ## Failure Recovery
 

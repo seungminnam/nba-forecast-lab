@@ -42,6 +42,10 @@ request maps to a stable raw CSV and adjacent metadata JSON. Network access
 occurs only when the cache is missing or a force refresh is explicitly
 requested. Tests inject a fetcher and never access the network.
 
+The source adapter was live-smoke-tested against the 2025-26 regular season.
+The resulting 2,460 team-game rows produced 1,230 validated canonical games.
+See `docs/source_report.md` for source behavior and observed anomalies.
+
 ## Persistence Contract
 
 Only validated canonical games are persisted. The writer atomically replaces

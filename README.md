@@ -3,9 +3,9 @@
 NBA Forecast Lab is a documentation-first, end-to-end machine learning project
 for calibrated NBA pre-game win probabilities and playoff series simulation.
 
-The project is under active development. Phase 0/1 builds a reproducible,
-validated historical game-data pipeline before any model performance claims are
-made.
+The project is under active development. Phase 0/1 now provides a reproducible,
+validated historical game-data pipeline. Feature engineering and modeling are
+the next phase; no model performance claims have been made.
 
 ## Research Question
 
@@ -34,6 +34,15 @@ immutable raw cache -> canonical games -> validation -> Parquet + DuckDB
                                            features, models, simulation
 ```
 
+## Current Verified Status
+
+- Cache-first `nba_api` source adapter with adjacent source metadata
+- Canonical one-row-per-game transformation and validation
+- Parquet and DuckDB processed storage
+- Offline fixture build and network-free automated tests
+- Live source smoke test: 2,460 NBA Stats team rows transformed into 1,230
+  canonical 2025-26 regular-season games
+
 ## Development Setup
 
 Python 3.9 or newer is required.
@@ -41,6 +50,7 @@ Python 3.9 or newer is required.
 ```bash
 python -m venv .venv
 source .venv/bin/activate
+python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 ruff check .
 mypy src
@@ -85,6 +95,7 @@ nba-forecast fetch-games \
 - [Data dictionary](docs/data_dictionary.md)
 - [Storage decision](docs/decisions/0001-data-storage.md)
 - [Data pipeline runbook](docs/runbook.md)
+- [NBA Stats source report](docs/source_report.md)
 
 ## Attribution and Limitations
 

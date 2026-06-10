@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Status:** Completed and verified on 2026-06-10
+
 **Goal:** Create a documented, tested Python repository that can turn cached NBA Stats team-game records into a validated canonical historical game table stored as Parquet and DuckDB.
 
 **Architecture:** A source adapter fetches or reads source-shaped team-game rows and persists immutable raw CSV extracts. A pure transformation module pairs the home and away rows into one canonical game row, a validation module enforces data contracts, and a build command writes processed Parquet plus a DuckDB analytical table. Tests use committed fixtures and never require network access.
@@ -50,25 +52,25 @@ tests/data/test_source_nba.py          raw-cache behavior tests
 - Create: `src/nba_forecast/data/__init__.py`
 - Create: `tests/__init__.py`
 
-- [ ] **Step 1: Define package and development tooling**
+- [x] **Step 1: Define package and development tooling**
 
 Create a `pyproject.toml` using a `src` layout, Python `>=3.9`, runtime
 dependencies `pandas`, `pyarrow`, `duckdb`, and `nba_api`, and a `dev`
 dependency group containing `pytest`, `ruff`, and `mypy`.
 
-- [ ] **Step 2: Define generated-file exclusions**
+- [x] **Step 2: Define generated-file exclusions**
 
 Ignore virtual environments, Python caches, `.superpowers/`, downloaded raw
 data, processed data, DuckDB files, and generated artifacts while preserving
 directory-level `.gitkeep` files if needed.
 
-- [ ] **Step 3: Write the initial documentation surfaces**
+- [x] **Step 3: Write the initial documentation surfaces**
 
 Document the product goal, MVP scope, current Phase 0/1 status, architecture,
 quickstart commands, source lineage, canonical fields, and the DuckDB/Parquet
 decision. Do not include unmeasured model results.
 
-- [ ] **Step 4: Add continuous integration**
+- [x] **Step 4: Add continuous integration**
 
 Configure GitHub Actions on pushes and pull requests to run:
 
@@ -79,7 +81,7 @@ mypy src
 pytest
 ```
 
-- [ ] **Step 5: Verify package configuration**
+- [x] **Step 5: Verify package configuration**
 
 Run:
 
@@ -89,7 +91,7 @@ python -m compileall src
 
 Expected: package files compile without errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add pyproject.toml .gitignore .github README.md docs src tests
@@ -105,7 +107,7 @@ git commit -m "chore: initialize documented python project"
 - Create: `tests/data/test_transform.py`
 - Modify: `docs/data_dictionary.md`
 
-- [ ] **Step 1: Write fixture rows and failing transformation tests**
+- [x] **Step 1: Write fixture rows and failing transformation tests**
 
 The fixture contains two completed games with exactly two source rows per game:
 one `MATCHUP` containing `vs.` and one containing `@`. Tests assert:
@@ -124,7 +126,7 @@ assert games.loc[0, "away_points"] == 101
 Also assert that a game with a missing away row raises
 `CanonicalGameError`.
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -134,7 +136,7 @@ pytest tests/data/test_transform.py -v
 
 Expected: FAIL because transformation modules do not exist.
 
-- [ ] **Step 3: Implement source contracts and transformation**
+- [x] **Step 3: Implement source contracts and transformation**
 
 Define required source columns and implement:
 
@@ -147,7 +149,7 @@ The implementation normalizes column names, determines home/away from
 `MATCHUP`, requires exactly two rows per game, verifies opposite teams, derives
 `home_win`, and returns canonical columns in a stable order.
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Run:
 
@@ -158,12 +160,12 @@ ruff check src/nba_forecast/data tests/data/test_transform.py
 
 Expected: all focused checks pass.
 
-- [ ] **Step 5: Update data dictionary**
+- [x] **Step 5: Update data dictionary**
 
 Document every required source column and canonical output column, including
 type, meaning, source, and point-in-time availability.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/nba_forecast/data tests/fixtures tests/data/test_transform.py docs/data_dictionary.md
@@ -177,12 +179,12 @@ git commit -m "feat: build canonical games from team rows"
 - Create: `tests/data/test_validate.py`
 - Modify: `docs/data_dictionary.md`
 
-- [ ] **Step 1: Write failing validation tests**
+- [x] **Step 1: Write failing validation tests**
 
 Tests cover duplicate `game_id`, home and away team equality, missing scores,
 invalid `home_win`, and a valid canonical table.
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -192,7 +194,7 @@ pytest tests/data/test_validate.py -v
 
 Expected: FAIL because `validate_games` does not exist.
 
-- [ ] **Step 3: Implement validation**
+- [x] **Step 3: Implement validation**
 
 Implement:
 
@@ -203,7 +205,7 @@ def validate_games(games: pd.DataFrame) -> None:
 
 The error message lists every failed rule so pipeline failures are actionable.
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Run:
 
@@ -213,7 +215,7 @@ pytest tests/data/test_validate.py tests/data/test_transform.py -v
 
 Expected: all tests pass.
 
-- [ ] **Step 5: Document validation rules and commit**
+- [x] **Step 5: Document validation rules and commit**
 
 ```bash
 git add src/nba_forecast/data/validate.py tests/data/test_validate.py docs/data_dictionary.md
@@ -228,7 +230,7 @@ git commit -m "feat: validate canonical game data"
 - Modify: `docs/architecture.md`
 - Modify: `docs/decisions/0001-data-storage.md`
 
-- [ ] **Step 1: Write failing round-trip tests**
+- [x] **Step 1: Write failing round-trip tests**
 
 Using `tmp_path`, assert `write_processed_games` creates:
 
@@ -240,7 +242,7 @@ nba_forecast.duckdb
 Query DuckDB and assert the `games` table matches the canonical fixture row
 count and IDs.
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -250,12 +252,12 @@ pytest tests/data/test_storage.py -v
 
 Expected: FAIL because persistence code does not exist.
 
-- [ ] **Step 3: Implement atomic persistence**
+- [x] **Step 3: Implement atomic persistence**
 
 Implement a function that validates games, writes Parquet, and creates or
 replaces the DuckDB `games` table. Parent directories are created explicitly.
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Run:
 
@@ -265,7 +267,7 @@ pytest tests/data/test_storage.py tests/data/test_validate.py -v
 
 Expected: all tests pass.
 
-- [ ] **Step 5: Update architecture and decision record, then commit**
+- [x] **Step 5: Update architecture and decision record, then commit**
 
 ```bash
 git add src/nba_forecast/data/storage.py tests/data/test_storage.py docs/architecture.md docs/decisions/0001-data-storage.md
@@ -280,7 +282,7 @@ git commit -m "feat: persist canonical games to parquet and duckdb"
 - Modify: `docs/architecture.md`
 - Modify: `docs/runbook.md`
 
-- [ ] **Step 1: Write failing source-adapter tests**
+- [x] **Step 1: Write failing source-adapter tests**
 
 Inject a fake fetcher and assert:
 
@@ -289,7 +291,7 @@ Inject a fake fetcher and assert:
 - `force=True` invokes the fetcher and replaces the cache.
 - Season and season-type values produce stable cache paths.
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -299,14 +301,14 @@ pytest tests/data/test_source_nba.py -v
 
 Expected: FAIL because the source adapter does not exist.
 
-- [ ] **Step 3: Implement cached source adapter**
+- [x] **Step 3: Implement cached source adapter**
 
 Implement an injectable cache-first adapter around
 `nba_api.stats.endpoints.LeagueGameFinder`. Network requests occur only on a
 cache miss or explicit force refresh. The adapter records source metadata beside
 each raw CSV.
 
-- [ ] **Step 4: Run focused tests**
+- [x] **Step 4: Run focused tests**
 
 Run:
 
@@ -316,7 +318,7 @@ pytest tests/data/test_source_nba.py -v
 
 Expected: all tests pass without network access.
 
-- [ ] **Step 5: Document source operation and commit**
+- [x] **Step 5: Document source operation and commit**
 
 ```bash
 git add src/nba_forecast/data/source_nba.py tests/data/test_source_nba.py docs/architecture.md docs/runbook.md
@@ -332,13 +334,13 @@ git commit -m "feat: add cache-first nba stats source adapter"
 - Modify: `README.md`
 - Modify: `docs/runbook.md`
 
-- [ ] **Step 1: Write failing CLI tests**
+- [x] **Step 1: Write failing CLI tests**
 
 Test the build command against `tests/fixtures/team_game_rows.csv` and a
 temporary output directory. Assert successful exit and created Parquet and
 DuckDB outputs.
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -348,7 +350,7 @@ pytest tests/test_cli.py -v
 
 Expected: FAIL because CLI entry points do not exist.
 
-- [ ] **Step 3: Implement commands**
+- [x] **Step 3: Implement commands**
 
 Expose:
 
@@ -360,7 +362,7 @@ nba-forecast fetch-games --season 2025-26 --season-type "Regular Season"
 The build command performs transform, validate, and persistence. The fetch
 command only populates raw source cache.
 
-- [ ] **Step 4: Run end-to-end fixture build**
+- [x] **Step 4: Run end-to-end fixture build**
 
 Run:
 
@@ -372,7 +374,7 @@ nba-forecast build-games \
 
 Expected: command reports the number of games written and both storage outputs.
 
-- [ ] **Step 5: Run full quality checks**
+- [x] **Step 5: Run full quality checks**
 
 Run:
 
@@ -384,7 +386,7 @@ pytest
 
 Expected: all checks pass.
 
-- [ ] **Step 6: Update README and runbook, then commit**
+- [x] **Step 6: Update README and runbook, then commit**
 
 ```bash
 git add src/nba_forecast/cli.py tests/test_cli.py pyproject.toml README.md docs/runbook.md
@@ -399,7 +401,7 @@ git commit -m "feat: add reproducible historical game build command"
 - Modify: `docs/data_dictionary.md`
 - Modify: `docs/runbook.md`
 
-- [ ] **Step 1: Verify clean installation**
+- [x] **Step 1: Verify clean installation**
 
 Create a fresh virtual environment and run:
 
@@ -409,14 +411,14 @@ python -m pip install -e ".[dev]"
 
 Expected: installation succeeds.
 
-- [ ] **Step 2: Verify offline fixture workflow**
+- [x] **Step 2: Verify offline fixture workflow**
 
 Run the documented fixture build command from the README and query the resulting
 DuckDB table.
 
 Expected: exactly two fixture games with unique IDs.
 
-- [ ] **Step 3: Verify quality suite**
+- [x] **Step 3: Verify quality suite**
 
 Run:
 
@@ -428,16 +430,15 @@ pytest
 
 Expected: all checks pass.
 
-- [ ] **Step 4: Audit documentation**
+- [x] **Step 4: Audit documentation**
 
 Confirm every implemented command, canonical field, validation rule, data path,
 and known limitation is represented in README or linked documentation. Remove
 claims about behavior that has not been verified.
 
-- [ ] **Step 5: Commit final Phase 0/1 documentation**
+- [x] **Step 5: Commit final Phase 0/1 documentation**
 
 ```bash
 git add README.md docs
 git commit -m "docs: finalize phase one data pipeline guide"
 ```
-
