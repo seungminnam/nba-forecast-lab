@@ -46,3 +46,15 @@ def test_team_rows_to_games_rejects_game_missing_away_row(
     with pytest.raises(CanonicalGameError, match="exactly two team rows"):
         team_rows_to_games(incomplete_rows)
 
+
+def test_team_rows_to_games_parses_home_team_from_repeated_away_matchup(
+    team_rows: pd.DataFrame,
+) -> None:
+    repeated_matchup_rows = team_rows.copy()
+    first_game = repeated_matchup_rows["GAME_ID"] == "0022500001"
+    repeated_matchup_rows.loc[first_game, "MATCHUP"] = "AWY @ HOM"
+
+    games = team_rows_to_games(repeated_matchup_rows)
+
+    assert games.loc[0, "home_team_abbreviation"] == "HOM"
+    assert games.loc[0, "away_team_abbreviation"] == "AWY"

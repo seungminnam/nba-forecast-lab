@@ -47,8 +47,13 @@ row.
 ## Canonical Transformation Rules
 
 - Each `GAME_ID` must contain exactly two source rows.
-- A `MATCHUP` containing `vs.` identifies the home-team row.
-- A `MATCHUP` containing `@` identifies the away-team row.
+- A `MATCHUP` shaped as `HOME vs. AWAY` identifies the left abbreviation as
+  home.
+- A `MATCHUP` shaped as `AWAY @ HOME` identifies the right abbreviation as
+  home.
+- The home row is selected by comparing the parsed home abbreviation with the
+  row's `TEAM_ABBREVIATION`. This handles known source anomalies where both
+  team rows contain the same `AWAY @ HOME` matchup string.
 - Home and away rows must have different team identifiers and matching game
   dates and season identifiers.
 - Canonical games are sorted by game date and game identifier.

@@ -21,7 +21,10 @@ def team_rows_to_games(team_rows: pd.DataFrame) -> pd.DataFrame:
     rows["GAME_ID"] = rows["GAME_ID"].astype("string")
     rows["SEASON_ID"] = rows["SEASON_ID"].astype("string")
     rows["GAME_DATE"] = pd.to_datetime(rows["GAME_DATE"], errors="raise")
-    rows["IS_HOME"] = rows["MATCHUP"].astype("string").str.contains("vs.", regex=False)
+    rows["PARSED_HOME_ABBREVIATION"] = rows["MATCHUP"].map(_home_abbreviation)
+    rows["IS_HOME"] = (
+        rows["TEAM_ABBREVIATION"] == rows["PARSED_HOME_ABBREVIATION"]
+    )
 
     invalid_counts = rows.groupby("GAME_ID", sort=False).size()
     invalid_counts = invalid_counts.loc[invalid_counts != 2]
@@ -76,3 +79,12 @@ def _require_source_columns(rows: pd.DataFrame) -> None:
     if missing:
         missing_columns = ", ".join(missing)
         raise CanonicalGameError(f"Missing required source columns: {missing_columns}")
+
+
+def _home_abbreviation(matchup: object) -> str:
+    matchup_text = str(matchup)
+    if " vs. " in matchup_text:
+        return matchup_text.split(" vs. ", maxsplit=1)[0]
+    if " @ " in matchup_text:
+        return matchup_text.split(" @ ", maxsplit=1)[1]
+    raise CanonicalGameError(f"Unsupported MATCHUP format: {matchup_text}")
