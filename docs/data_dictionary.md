@@ -52,3 +52,11 @@ row.
 - Home and away rows must have different team identifiers and matching game
   dates and season identifiers.
 - Canonical games are sorted by game date and game identifier.
+
+## Canonical Validation Rules
+
+- `game_id` is unique.
+- Home and away team identifiers differ.
+- Completed games contain both final scores.
+- `home_win` contains only `0` or `1`.
+- Validation reports all detected rule failures in one actionable error.
