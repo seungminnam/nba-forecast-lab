@@ -27,6 +27,10 @@ def probability_metrics(
     return {
         "brier_score": brier_score,
         "log_loss": log_loss,
+        "expected_calibration_error": _expected_calibration_error(
+            targets,
+            predicted,
+        ),
         "roc_auc": roc_auc,
         "accuracy": accuracy,
     }
@@ -44,3 +48,31 @@ def _roc_auc(targets: pd.Series, predicted: pd.Series) -> float:
         positive_rank_sum - positives * (positives + 1) / 2
     ) / (positives * negatives)
 
+
+def _expected_calibration_error(
+    targets: pd.Series,
+    predicted: pd.Series,
+    *,
+    bins: int = 10,
+) -> float:
+    bin_ids = pd.cut(
+        predicted,
+        bins=[index / bins for index in range(bins + 1)],
+        labels=False,
+        include_lowest=True,
+    )
+    frame = pd.DataFrame(
+        {
+            "target": targets,
+            "predicted": predicted,
+            "bin_id": bin_ids,
+        }
+    )
+    grouped = frame.groupby("bin_id", observed=True)
+    calibration_error = 0.0
+    for _, group in grouped:
+        weight = len(group) / len(frame)
+        calibration_error += weight * abs(
+            float(group["target"].mean()) - float(group["predicted"].mean())
+        )
+    return calibration_error

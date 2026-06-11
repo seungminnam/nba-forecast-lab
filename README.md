@@ -55,9 +55,10 @@ baseline achieved:
 |---:|---:|---:|---:|
 | **0.20649** | **0.60051** | **0.73357** | **0.68293** |
 
-It reduced Brier Score by **3.33%** relative to the Elo baseline. XGBoost has
-now been evaluated during validation-only model selection; probability
-calibration has not yet been evaluated.
+It reduced Brier Score by **3.33%** relative to the Elo baseline. This earlier
+full-history baseline remains useful context; subsequent validation-only model
+and calibration selection produced the frozen recent-five Raw Logistic
+Regression bundle described below.
 
 ## Current Model Selection Result
 
@@ -74,11 +75,26 @@ metrics:
 | Logistic Regression | Recent 5 | **0.208594** | **0.603709** |
 | XGBoost | Decayed full history | 0.211099 | 0.609608 |
 
-The result supports using recent-five Logistic Regression for the next
-calibration experiment. It does not claim that XGBoost is universally worse;
-with the current compact and correlated feature set, its added complexity did
-not improve validation probability quality. The 2025-26 test season was not
-used during this selection.
+The result selected recent-five Logistic Regression for calibration. It does
+not claim that XGBoost is universally worse; with the current compact and
+correlated feature set, its added complexity did not improve validation
+probability quality.
+
+## Selected Probability Model
+
+Raw, Platt, and Isotonic probabilities were selected using chronological
+halves of the 2024-25 validation season. Raw Logistic Regression probabilities
+performed best, so no additional probability transform was retained.
+
+The frozen `2026-06-11-recent5-raw` bundle was then evaluated once on the
+untouched 2025-26 regular season:
+
+| Brier Score | Log Loss | ECE | ROC-AUC | Accuracy |
+|---:|---:|---:|---:|---:|
+| **0.207254** | **0.601983** | **0.039914** | **0.732116** | **0.689431** |
+
+Retaining Raw is a measured calibration decision. See the model card and
+experiment history for the temporal contract, alternatives, and limitations.
 
 ## Development Setup
 
@@ -151,6 +167,7 @@ nba-forecast evaluate-baselines \
 - [Data pipeline runbook](docs/runbook.md)
 - [NBA Stats source report](docs/source_report.md)
 - [Experiment history and model-selection evidence](docs/experiments.md)
+- [Selected probability model card](docs/model_card.md)
 
 ## Attribution and Limitations
 

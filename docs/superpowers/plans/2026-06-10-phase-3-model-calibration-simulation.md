@@ -100,27 +100,31 @@ git commit -m "feat: compare xgboost training windows"
 - Create: `docs/model_card.md`
 - Modify: `docs/experiments.md`
 
-- [ ] **Step 1: Write failing calibration leakage tests**
+- [x] **Step 1: Write failing calibration leakage tests**
 
-Fit Platt and Isotonic calibrators on validation predictions only. Assert test
-labels never enter calibrator fitting and output probabilities remain bounded.
+Chronologically split validation predictions into calibration-fit and
+calibration-selection halves. Fit Platt and Isotonic only on the earlier half,
+select Raw, Platt, or Isotonic only on the later half, and assert final test
+labels never enter fitting or selection.
 
-- [ ] **Step 2: Implement calibrators**
+- [x] **Step 2: Implement calibrators**
 
 Use Logistic Regression for Platt scaling and `IsotonicRegression` for isotonic
-calibration. Compare raw, Platt, and Isotonic test metrics.
+calibration. Select raw, Platt, or Isotonic on the later validation half, refit
+the selected calibrator on full validation predictions, then evaluate the
+frozen bundle once on the final test season.
 
-- [ ] **Step 3: Persist versioned model bundle**
+- [x] **Step 3: Persist versioned model bundle**
 
 Save model, calibrator, feature columns, training seasons, validation season,
 test season, creation timestamp, and measured metrics together.
 
-- [ ] **Step 4: Write model card and measured final test result**
+- [x] **Step 4: Write model card and measured final test result**
 
 Document intended use, evaluation design, selected calibration, limitations,
 and honest final test metrics.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```bash
 git commit -m "feat: calibrate and version selected probability model"

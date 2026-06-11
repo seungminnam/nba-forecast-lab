@@ -137,3 +137,81 @@ experiment because it has the lowest validation Brier Score and Log Loss. The
 ablation experiments will later test whether efficiency detail, opponent
 strength, or head-to-head history creates nonlinear signal that changes the
 model comparison.
+
+## Probability Calibration Experiment
+
+**Run date:** 2026-06-11
+
+**Selected base model:** Recent-five Logistic Regression
+
+**Calibration selection season:** 2024-25 (`22024`), split chronologically into
+an earlier calibration-fit half and a later calibration-selection half
+
+**Untouched final test:** 2025-26 (`22025`)
+
+### Pre-Experiment Hypothesis
+
+Platt scaling is expected to produce the best selection-half Brier Score, but
+the improvement over raw Logistic Regression probabilities is expected to be
+small. Logistic Regression probabilities are often reasonably calibrated
+already, while Platt scaling can make a low-variance correction for systematic
+overconfidence or underconfidence. Isotonic calibration is expected to be less
+stable because its flexible step function can fit random patterns in the
+approximately half-season calibration sample.
+
+### Corrected Temporal Contract
+
+The earlier Phase 3 plan proposed fitting calibrators on validation predictions
+and comparing raw, Platt, and Isotonic results on the final test season. That
+would use the test period to choose a calibration method and contaminate the
+final estimate. The corrected workflow is:
+
+```text
+2019-20 through 2023-24 -> fit selected base model
+2024-25 first half      -> fit Platt and Isotonic calibrators
+2024-25 second half     -> select Raw, Platt, or Isotonic
+2024-25 full season     -> refit only the selected calibrator
+2020-21 through 2024-25 -> refit recent-five base model
+2025-26                 -> evaluate the frozen bundle exactly once
+```
+
+Selection uses Brier Score first and Log Loss as the tie-breaker. Expected
+Calibration Error is reported as supporting calibration context. The selected
+method may be Raw if neither calibrator improves validation probability
+quality.
+
+### Calibration Selection Results
+
+Each validation half contains 615 chronologically ordered games.
+
+| Method | Brier Score | Log Loss | ECE | ROC-AUC | Accuracy |
+|---|---:|---:|---:|---:|---:|
+| Raw | **0.201537** | **0.588339** | **0.032448** | **0.750629** | **0.689431** |
+| Isotonic | 0.204388 | 0.630123 | 0.037552 | 0.744941 | 0.682927 |
+| Platt | 0.205197 | 0.598572 | 0.053973 | 0.750629 | 0.686179 |
+
+The hypothesis was not supported. Raw Logistic Regression probabilities
+outperformed both calibration methods on the later validation half. Platt
+scaling preserved ranking, as expected, but worsened probability quality.
+Isotonic calibration changed ranking through tied step outputs and had the
+worst Log Loss, consistent with instability from a small calibration sample.
+
+Raw is therefore the selected calibration method. This is an intentional
+measured decision, not an omitted calibration step.
+
+### Frozen 2025-26 Final Test Result
+
+After calibration selection, the base model was refit on the recent five
+seasons from 2020-21 through 2024-25. Raw was retained as the frozen
+calibration method and the 2025-26 test season was evaluated once.
+
+| Method | Brier Score | Log Loss | ECE | ROC-AUC | Accuracy |
+|---|---:|---:|---:|---:|---:|
+| Raw | **0.207254** | **0.601983** | **0.039914** | **0.732116** | **0.689431** |
+
+This final result is slightly worse than the earlier equal-weight
+full-history Logistic Regression baseline test Brier Score of `0.20649`.
+That difference is retained rather than using the test result to reverse the
+validation-based recent-five selection. Future feature-group experiments must
+use new validation or walk-forward evidence rather than repeatedly optimizing
+against this final test season.
