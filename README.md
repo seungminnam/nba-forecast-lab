@@ -96,6 +96,25 @@ untouched 2025-26 regular season:
 Retaining Raw is a measured calibration decision. See the model card and
 experiment history for the temporal contract, alternatives, and limitations.
 
+## Best-of-Seven Simulator
+
+The model-independent Monte Carlo engine now supports:
+
+- NBA home-court order `A, A, B, B, A, B, A`
+- immediate stopping when either team reaches four wins
+- context-aware home-team probability providers
+- deterministic seeded simulation
+- series winner, winner-in-N, length, and expected-length distributions
+
+A 10,000-run seeded engine example using a synthetic `60%` probability for
+whichever team is home produced a `53.87%` series win probability for the
+home-court owner and an expected length of `5.8408` games. This is a simulator
+verification example, not an NBA team prediction.
+
+The frozen model currently evaluates prepared feature rows. Connecting
+scheduled matchup features and the model bundle to the simulator is part of
+the next application workflow.
+
 ## Development Setup
 
 Python 3.9 or newer is required.
@@ -168,6 +187,7 @@ nba-forecast evaluate-baselines \
 - [NBA Stats source report](docs/source_report.md)
 - [Experiment history and model-selection evidence](docs/experiments.md)
 - [Selected probability model card](docs/model_card.md)
+- [Series simulation contract](docs/decisions/0002-series-simulation-contract.md)
 
 ## Attribution and Limitations
 

@@ -70,3 +70,35 @@ explicit season holdout -> comparable baseline_metrics.csv
 
 The feature table stores identifiers and the target for evaluation, but trained
 models receive only the authoritative `MODEL_FEATURE_COLUMNS` list.
+
+## Model and Simulation Boundary
+
+```text
+prepared game context
+        |
+        v
+frozen probability model bundle
+        |
+        v
+home-team win probability provider
+        |
+        v
+model-independent best-of-seven simulator
+        |
+        v
+series winner and length distributions
+```
+
+The simulator consumes a callable that returns the home team's probability for
+one `SeriesGameContext`. It does not load a model, construct features, or
+change probabilities itself. This boundary allows deterministic fixed-
+probability tests today and prepared model-backed probabilities in the future.
+
+Each sampled series follows home order `A, A, B, B, A, B, A`, where Team A
+owns home-court advantage, and stops immediately when either team reaches four
+wins. The default displayed result uses 10,000 simulations.
+
+The current frozen model bundle evaluates prepared feature rows. Building
+future scheduled-game feature rows and connecting them to the simulation
+provider remains application-integration work; the simulator must not invent
+missing team state.
