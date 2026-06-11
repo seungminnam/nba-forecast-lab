@@ -105,6 +105,27 @@ binary features.
 `MODEL_FEATURE_COLUMNS` is the authoritative list supplied to trained models.
 It excludes identifiers, current-game scores, and the `home_win` target.
 
+## Scheduled Matchup Snapshot
+
+A `ScheduledMatchup` contains only information known before tip-off:
+
+| Field | Meaning |
+|---|---|
+| `game_id` | Stable scheduled-game identifier |
+| `game_date` | Scheduled calendar date |
+| `season_id` | NBA season identifier |
+| `home_team_id`, `away_team_id` | Team identifiers |
+| `home_team_abbreviation`, `away_team_abbreviation` | Display abbreviations |
+
+The as-of builder includes completed history only where
+`game_date < as_of_date`. It returns one row containing identifiers,
+`as_of_date`, an empty target, and the same `MODEL_FEATURE_COLUMNS` used during
+training.
+
+Stored matchup prediction reports include a UTC prediction timestamp,
+`as_of_date`, game identifier, model version, feature version, home and away
+probabilities, the exact feature values used, and a nullable final outcome.
+
 ## Series Simulation Contract
 
 `team_a` is the home-court owner and `team_b` is the opponent.

@@ -8,6 +8,7 @@ from nba_forecast.features.team_state import (
     build_team_state,
 )
 
+MODEL_FEATURE_VERSION = "model-features-v1"
 DIFFERENCE_TEAM_FEATURES = tuple(
     feature
     for feature in PREGAME_TEAM_FEATURE_COLUMNS
@@ -63,4 +64,3 @@ def _side_state(team_state: pd.DataFrame, *, is_home: bool) -> pd.DataFrame:
             for feature in PREGAME_TEAM_FEATURE_COLUMNS
         }
     )
-

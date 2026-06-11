@@ -1,10 +1,19 @@
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
 
 from nba_forecast.cli import main
 from nba_forecast.data.source_nba import raw_cache_path
+from nba_forecast.features.game_features import MODEL_FEATURE_COLUMNS
+from nba_forecast.models.artifacts import (
+    ModelBundle,
+    ModelBundleMetadata,
+    save_model_bundle,
+)
+from nba_forecast.models.baselines import fit_logistic_regression
+from nba_forecast.models.calibration import RawCalibrator
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "team_game_rows.csv"
 MULTI_SEASON_FIXTURE_PATH = (
@@ -170,3 +179,96 @@ def test_simulate_series_command_writes_json_report(tmp_path: Path) -> None:
     assert report["inputs"]["team_a"] == "Knicks"
     assert report["inputs"]["team_b"] == "Spurs"
     assert report["result"]["simulations"] == 1000
+
+
+def test_predict_matchup_command_writes_auditable_json_report(tmp_path: Path) -> None:
+    assert (
+        main(
+            [
+                "build-games",
+                "--raw-csv",
+                str(MULTI_SEASON_FIXTURE_PATH),
+                "--output-dir",
+                str(tmp_path),
+            ]
+        )
+        == 0
+    )
+    bundle_path = tmp_path / "model.joblib"
+    _write_test_bundle(bundle_path)
+
+    exit_code = main(
+        [
+            "predict-matchup",
+            "--games-parquet",
+            str(tmp_path / "processed" / "games.parquet"),
+            "--model-bundle",
+            str(bundle_path),
+            "--game-id",
+            "scheduled-1",
+            "--game-date",
+            "2025-10-25",
+            "--as-of-date",
+            "2025-10-25",
+            "--season-id",
+            "22025",
+            "--home-team-id",
+            "1",
+            "--away-team-id",
+            "2",
+            "--home-team-abbreviation",
+            "HOM",
+            "--away-team-abbreviation",
+            "AWY",
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+
+    report_path = (
+        tmp_path / "artifacts" / "predictions" / "matchup_prediction.json"
+    )
+    report = json.loads(report_path.read_text())
+
+    assert exit_code == 0
+    assert report["as_of_date"] == "2025-10-25"
+    assert report["model_version"] == "cli-test-raw"
+    assert report["prediction_timestamp"].endswith("+00:00")
+    assert report["feature_version"] == "model-features-v1"
+    assert report["final_outcome"] is None
+    assert report["matchup"]["game_id"] == "scheduled-1"
+    assert 0.0 < report["home_win_probability"] < 1.0
+    assert set(report["features"]) == set(MODEL_FEATURE_COLUMNS)
+
+
+def _write_test_bundle(path: Path) -> None:
+    rows = 20
+    frame = pd.DataFrame(
+        {
+            feature: [
+                ((-1) ** index) * (position + 1) / 10
+                for index in range(rows)
+            ]
+            for position, feature in enumerate(MODEL_FEATURE_COLUMNS)
+        }
+    )
+    frame["home_win"] = [index % 2 for index in range(rows)]
+    metadata = ModelBundleMetadata(
+        version="cli-test-raw",
+        created_at=datetime(2026, 6, 11, tzinfo=timezone.utc).isoformat(),
+        base_model="logistic_regression",
+        calibration_method="raw",
+        feature_columns=MODEL_FEATURE_COLUMNS,
+        training_seasons=("22025",),
+        calibration_season="22025",
+        test_season="22025",
+        metrics={"brier_score": 0.2},
+    )
+    save_model_bundle(
+        ModelBundle(
+            model=fit_logistic_regression(frame),
+            calibrator=RawCalibrator(),
+            metadata=metadata,
+        ),
+        path,
+    )

@@ -8,6 +8,7 @@ from typing import Optional
 
 import pandas as pd
 
+from nba_forecast.application.matchup_prediction import predict_scheduled_matchup
 from nba_forecast.application.simulator_lab import SimulatorLabInput, run_simulator_lab
 from nba_forecast.config import HISTORICAL_SEASONS, RAW_DATA_DIR
 from nba_forecast.data.source_nba import load_or_fetch_history, load_or_fetch_team_games
@@ -16,6 +17,8 @@ from nba_forecast.data.transform import team_rows_to_games
 from nba_forecast.evaluation.baselines import evaluate_baselines
 from nba_forecast.evaluation.splits import make_temporal_split
 from nba_forecast.features.game_features import build_game_features
+from nba_forecast.features.matchup_features import ScheduledMatchup
+from nba_forecast.models.artifacts import load_model_bundle
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -56,6 +59,20 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             args.team_a_away_probability,
             args.simulations,
             args.seed,
+            args.output_dir,
+        )
+    if args.command == "predict-matchup":
+        return _predict_matchup(
+            args.games_parquet,
+            args.model_bundle,
+            args.game_id,
+            args.game_date,
+            args.as_of_date,
+            args.season_id,
+            args.home_team_id,
+            args.away_team_id,
+            args.home_team_abbreviation,
+            args.away_team_abbreviation,
             args.output_dir,
         )
 
@@ -135,6 +152,22 @@ def _build_parser() -> argparse.ArgumentParser:
     simulation_parser.add_argument("--simulations", type=int, default=10_000)
     simulation_parser.add_argument("--seed", type=int, default=2026)
     simulation_parser.add_argument("--output-dir", type=Path, required=True)
+
+    prediction_parser = subparsers.add_parser(
+        "predict-matchup",
+        help="Score one scheduled matchup from an as-of completed-game snapshot.",
+    )
+    prediction_parser.add_argument("--games-parquet", type=Path, required=True)
+    prediction_parser.add_argument("--model-bundle", type=Path, required=True)
+    prediction_parser.add_argument("--game-id", required=True)
+    prediction_parser.add_argument("--game-date", type=pd.Timestamp, required=True)
+    prediction_parser.add_argument("--as-of-date", type=pd.Timestamp, required=True)
+    prediction_parser.add_argument("--season-id", required=True)
+    prediction_parser.add_argument("--home-team-id", type=int, required=True)
+    prediction_parser.add_argument("--away-team-id", type=int, required=True)
+    prediction_parser.add_argument("--home-team-abbreviation", required=True)
+    prediction_parser.add_argument("--away-team-abbreviation", required=True)
+    prediction_parser.add_argument("--output-dir", type=Path, required=True)
 
     return parser
 
@@ -251,6 +284,43 @@ def _simulate_series(
     report_path = report_dir / "series_simulation.json"
     report_path.write_text(json.dumps(output.to_report(), indent=2, sort_keys=True))
     print(f"Wrote seeded series simulation report to {report_path}")
+    return 0
+
+
+def _predict_matchup(
+    games_parquet: Path,
+    model_bundle: Path,
+    game_id: str,
+    game_date: pd.Timestamp,
+    as_of_date: pd.Timestamp,
+    season_id: str,
+    home_team_id: int,
+    away_team_id: int,
+    home_team_abbreviation: str,
+    away_team_abbreviation: str,
+    output_dir: Path,
+) -> int:
+    games = pd.read_parquet(games_parquet)
+    bundle = load_model_bundle(model_bundle)
+    output = predict_scheduled_matchup(
+        games,
+        ScheduledMatchup(
+            game_id=game_id,
+            game_date=game_date,
+            season_id=season_id,
+            home_team_id=home_team_id,
+            away_team_id=away_team_id,
+            home_team_abbreviation=home_team_abbreviation,
+            away_team_abbreviation=away_team_abbreviation,
+        ),
+        as_of_date=as_of_date,
+        bundle=bundle,
+    )
+    prediction_dir = output_dir / "artifacts" / "predictions"
+    prediction_dir.mkdir(parents=True, exist_ok=True)
+    prediction_path = prediction_dir / "matchup_prediction.json"
+    prediction_path.write_text(json.dumps(output.to_report(), indent=2, sort_keys=True))
+    print(f"Wrote frozen-model matchup prediction to {prediction_path}")
     return 0
 
 
