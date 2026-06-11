@@ -104,3 +104,31 @@ binary features.
 
 `MODEL_FEATURE_COLUMNS` is the authoritative list supplied to trained models.
 It excludes identifiers, current-game scores, and the `home_win` target.
+
+## Series Simulation Contract
+
+`team_a` is the home-court owner and `team_b` is the opponent.
+
+Each probability request receives a `SeriesGameContext`:
+
+| Field | Meaning |
+|---|---|
+| `game_number` | One-based scheduled series game number |
+| `home_team` | Team hosting the current game |
+| `away_team` | Visiting team |
+| `team_a`, `team_b` | Stable series team identifiers |
+| `team_a_wins`, `team_b_wins` | Sampled series score before the current game |
+
+The provider returns the current game's home-team win probability between
+`0.0` and `1.0`.
+
+`SeriesSimulationResult` reports:
+
+| Field | Meaning |
+|---|---|
+| `team_a_series_win_probability` | Fraction of simulations won by Team A |
+| `team_b_series_win_probability` | Fraction of simulations won by Team B |
+| `outcome_probabilities` | Winner-in-4/5/6/7 probability distribution |
+| `length_probabilities` | Probability the series lasts 4, 5, 6, or 7 games |
+| `expected_games` | Probability-weighted expected series length |
+| `simulations`, `seed` | Reproduction metadata |

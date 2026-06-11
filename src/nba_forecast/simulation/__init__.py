@@ -1,0 +1,1 @@
+"""Model-independent playoff simulation."""

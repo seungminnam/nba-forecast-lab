@@ -139,6 +139,19 @@ The complete versioned model bundle is generated programmatically with
 `ModelBundle`, `ModelBundleMetadata`, and `save_model_bundle`. Generated
 artifacts remain excluded from Git.
 
+## Run a Seeded Series Simulation
+
+Run a model-independent engine check with a synthetic probability provider:
+
+```bash
+python -c "from nba_forecast.simulation.series import simulate_best_of_seven; result = simulate_best_of_seven('Team A', 'Team B', lambda context: 0.60, simulations=10000, seed=2026); print(result)"
+```
+
+The provider returns the current game's home-team win probability. This
+synthetic example verifies scheduling, stopping, and distribution behavior; it
+is not an NBA matchup prediction. A later application workflow will construct
+scheduled-game feature rows and query the frozen model bundle.
+
 ## Failure Recovery
 
 - If NBA Stats is unavailable, retain and use the existing raw cache.

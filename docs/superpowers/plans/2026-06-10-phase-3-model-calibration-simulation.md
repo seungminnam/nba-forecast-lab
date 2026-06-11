@@ -139,18 +139,18 @@ git commit -m "feat: calibrate and version selected probability model"
 - Modify: `docs/architecture.md`
 - Modify: `docs/data_dictionary.md`
 
-- [ ] **Step 1: Write failing schedule and stopping tests**
+- [x] **Step 1: Write failing schedule and stopping tests**
 
 Assert schedule `H, H, A, A, H, A, H`, stop at four wins, deterministic seeded
 output, and probability distribution totals.
 
-- [ ] **Step 2: Implement simulator**
+- [x] **Step 2: Implement simulator**
 
 Consume a callable that returns the designated home team's win probability.
 Run at least 10,000 simulations by default and report series winner, win-in-N
 distribution, and expected length.
 
-- [ ] **Step 3: Verify simulator invariants and commit**
+- [x] **Step 3: Verify simulator invariants and commit**
 
 ```bash
 git commit -m "feat: add best of seven playoff simulator"
