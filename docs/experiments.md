@@ -67,3 +67,73 @@ Implemented baseline definitions:
 
 This document will record each historical configuration, data window, metrics,
 and selection decision without replacing earlier results.
+
+## Training Window and XGBoost Experiment
+
+**Run date:** 2026-06-11
+
+**Fixed feature set:** The existing 19 `MODEL_FEATURE_COLUMNS`. No new feature
+groups are introduced in this experiment.
+
+**Selection period:** 2024-25 validation season (`22024`)
+
+**Untouched period:** 2025-26 test season (`22025`). This period is excluded
+from training-window and model selection.
+
+### Pre-Experiment Hypothesis
+
+Recent five-season XGBoost is expected to achieve the best validation Brier
+Score, but its advantage over Logistic Regression is expected to be small.
+The current feature set is compact and contains several correlated summaries
+of team strength, including Elo, win percentage, and rolling ratings.
+Logistic Regression can already model much of their approximately monotonic
+relationship with win probability, while XGBoost may gain from nonlinear
+effects and interactions such as rest, back-to-back status, and season
+progress.
+
+### Compared Training Windows
+
+| Window | Training seasons relative to validation | Weighting |
+|---|---|---|
+| Recent 3 | Most recent three completed seasons | Equal |
+| Recent 5 | Most recent five completed seasons | Equal |
+| Decayed full history | Every completed historical season | `0.8` annual decay, newest training season weighted `1.0` |
+
+Both Logistic Regression and a conservative fixed-configuration XGBoost model
+will be evaluated on identical validation rows. The winner is selected by
+validation Brier Score, with Log Loss as the tie-breaker. Hyperparameter
+tuning and feature expansion are deliberately deferred so this experiment
+isolates model class and training-window effects.
+
+### Validation Results
+
+| Model | Training window | Train rows | Brier Score | Log Loss | ROC-AUC | Accuracy |
+|---|---|---:|---:|---:|---:|---:|
+| Logistic Regression | Recent 5 | 5,829 | **0.208594** | **0.603709** | 0.730156 | 0.678049 |
+| Logistic Regression | Decayed full history | 10,749 | 0.208670 | 0.603964 | **0.730329** | **0.680488** |
+| Logistic Regression | Recent 3 | 3,690 | 0.208736 | 0.604207 | 0.730118 | 0.678862 |
+| XGBoost | Decayed full history | 10,749 | 0.211099 | 0.609608 | 0.723284 | 0.653659 |
+| XGBoost | Recent 3 | 3,690 | 0.211292 | 0.610053 | 0.722403 | 0.655285 |
+| XGBoost | Recent 5 | 5,829 | 0.211721 | 0.611173 | 0.721448 | 0.672358 |
+
+### Interpretation and Selection
+
+The hypothesis was only partly supported. The recent five-season window
+produced the best Brier Score, but Logistic Regression outperformed every
+XGBoost window. Recent-five Logistic Regression improved Brier Score by
+approximately `1.19%` relative to the best XGBoost configuration and by
+approximately `0.28%` relative to the earlier equal-weight full-history
+Logistic Regression validation result.
+
+The three Logistic Regression windows are extremely close. This experiment
+does not establish that five seasons are universally optimal or that XGBoost
+is unsuitable for NBA forecasting. It shows that, for the current compact and
+correlated 19-feature set, the added model complexity did not improve
+validation probability quality under the fixed conservative configuration.
+
+Recent-five Logistic Regression is selected for the next calibration
+experiment because it has the lowest validation Brier Score and Log Loss. The
+2025-26 test season remains untouched during this selection. Feature-group
+ablation experiments will later test whether efficiency detail, opponent
+strength, or head-to-head history creates nonlinear signal that changes the
+model comparison.

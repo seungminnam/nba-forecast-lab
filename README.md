@@ -55,8 +55,30 @@ baseline achieved:
 |---:|---:|---:|---:|
 | **0.20649** | **0.60051** | **0.73357** | **0.68293** |
 
-It reduced Brier Score by **3.33%** relative to the Elo baseline. XGBoost and
-probability calibration have not yet been selected or evaluated.
+It reduced Brier Score by **3.33%** relative to the Elo baseline. XGBoost has
+now been evaluated during validation-only model selection; probability
+calibration has not yet been evaluated.
+
+## Current Model Selection Result
+
+Using the existing 19 pre-game features, Logistic Regression and a
+fixed-configuration XGBoost model were compared across recent three-season,
+recent five-season, and decayed full-history training windows on the 2024-25
+validation season.
+
+Recent-five Logistic Regression produced the best validation probability
+metrics:
+
+| Model | Training window | Brier Score | Log Loss |
+|---|---|---:|---:|
+| Logistic Regression | Recent 5 | **0.208594** | **0.603709** |
+| XGBoost | Decayed full history | 0.211099 | 0.609608 |
+
+The result supports using recent-five Logistic Regression for the next
+calibration experiment. It does not claim that XGBoost is universally worse;
+with the current compact and correlated feature set, its added complexity did
+not improve validation probability quality. The 2025-26 test season was not
+used during this selection.
 
 ## Development Setup
 
@@ -128,6 +150,7 @@ nba-forecast evaluate-baselines \
 - [Storage decision](docs/decisions/0001-data-storage.md)
 - [Data pipeline runbook](docs/runbook.md)
 - [NBA Stats source report](docs/source_report.md)
+- [Experiment history and model-selection evidence](docs/experiments.md)
 
 ## Attribution and Limitations
 
