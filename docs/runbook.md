@@ -124,6 +124,21 @@ This compares Logistic Regression and fixed-configuration XGBoost using recent
 three-season, recent five-season, and annually decayed full-history windows.
 It selects on the 2024-25 validation season and excludes all 2025-26 rows.
 
+## Run Calibration Selection and Final Evaluation
+
+The calibration workflow chronologically splits the 2024-25 validation season,
+selects Raw, Platt, or Isotonic on its later half, refits the selected method
+on the full validation predictions, and evaluates the frozen bundle once on
+2025-26.
+
+```bash
+python -c "from pathlib import Path; import pandas as pd; from nba_forecast.models.calibration import run_calibration_experiment; features = pd.read_parquet('data/features/games.parquet'); result = run_calibration_experiment(features, validation_season='22024', test_season='22025'); report_dir = Path('artifacts/reports'); report_dir.mkdir(parents=True, exist_ok=True); result.selection_metrics.to_csv(report_dir / 'calibration_selection_metrics.csv', index=False); result.test_metrics.to_csv(report_dir / 'final_test_metrics.csv', index=False); print(result.selected_method); print(result.selection_metrics.to_string(index=False)); print(result.test_metrics.to_string(index=False))"
+```
+
+The complete versioned model bundle is generated programmatically with
+`ModelBundle`, `ModelBundleMetadata`, and `save_model_bundle`. Generated
+artifacts remain excluded from Git.
+
 ## Failure Recovery
 
 - If NBA Stats is unavailable, retain and use the existing raw cache.

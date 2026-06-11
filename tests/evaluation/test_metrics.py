@@ -17,3 +17,8 @@ def test_probability_metrics_returns_nan_auc_for_one_class() -> None:
 
     assert math.isnan(metrics["roc_auc"])
 
+
+def test_probability_metrics_reports_expected_calibration_error() -> None:
+    metrics = probability_metrics([0, 0, 1, 1], [0.1, 0.2, 0.8, 0.9])
+
+    assert math.isclose(metrics["expected_calibration_error"], 0.15)
