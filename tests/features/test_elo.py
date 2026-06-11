@@ -10,6 +10,8 @@ def _elo_games() -> pd.DataFrame:
                 "game_id": "game-1",
                 "game_date": pd.Timestamp("2025-10-21"),
                 "season_id": "22025",
+                "season_type": "Regular Season",
+                "season_key": "2025-26",
                 "home_team_id": 1,
                 "away_team_id": 2,
                 "home_win": 1,
@@ -18,6 +20,8 @@ def _elo_games() -> pd.DataFrame:
                 "game_id": "game-2",
                 "game_date": pd.Timestamp("2025-10-22"),
                 "season_id": "22025",
+                "season_type": "Regular Season",
+                "season_key": "2025-26",
                 "home_team_id": 1,
                 "away_team_id": 2,
                 "home_win": 0,
@@ -50,3 +54,32 @@ def test_changing_result_does_not_change_same_game_elo() -> None:
     assert original.loc[0, "away_elo"] == changed.loc[0, "away_elo"]
     assert original.loc[1, "home_elo"] != changed.loc[1, "home_elo"]
 
+
+def test_playoffs_do_not_trigger_offseason_elo_reversion() -> None:
+    games = _elo_games()
+    playoff_game = games.iloc[[1]].copy()
+    playoff_game["game_id"] = "game-3"
+    playoff_game["game_date"] = pd.Timestamp("2026-04-18")
+    playoff_game["season_id"] = "42025"
+    playoff_game["season_type"] = "Playoffs"
+    games = pd.concat([games, playoff_game], ignore_index=True)
+
+    elo = build_elo_features(games, offseason_reversion=0.0)
+
+    assert elo.loc[2, "home_elo"] != 1500.0
+    assert elo.loc[2, "away_elo"] != 1500.0
+
+
+def test_actual_new_season_triggers_offseason_elo_reversion() -> None:
+    games = _elo_games()
+    new_season_game = games.iloc[[1]].copy()
+    new_season_game["game_id"] = "game-3"
+    new_season_game["game_date"] = pd.Timestamp("2026-10-20")
+    new_season_game["season_id"] = "22026"
+    new_season_game["season_key"] = "2026-27"
+    games = pd.concat([games, new_season_game], ignore_index=True)
+
+    elo = build_elo_features(games, offseason_reversion=0.0)
+
+    assert elo.loc[2, "home_elo"] == 1500.0
+    assert elo.loc[2, "away_elo"] == 1500.0

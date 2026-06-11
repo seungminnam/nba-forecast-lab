@@ -2,10 +2,13 @@ import json
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from nba_forecast.data.source_nba import (
+    RawCacheMetadataError,
     load_or_fetch_history,
     load_or_fetch_team_games,
+    load_raw_cache_context,
     raw_cache_path,
 )
 
@@ -112,6 +115,25 @@ def test_raw_cache_path_is_stable(tmp_path: Path) -> None:
         / "2025-26"
         / "regular-season.csv"
     )
+
+
+def test_load_raw_cache_context_reads_request_metadata(tmp_path: Path) -> None:
+    cache_path = raw_cache_path(tmp_path, "2025-26", "Playoffs")
+    cache_path.parent.mkdir(parents=True)
+    cache_path.write_text("GAME_ID\n")
+    cache_path.with_suffix(".metadata.json").write_text(
+        json.dumps({"season": "2025-26", "season_type": "Playoffs"})
+    )
+
+    context = load_raw_cache_context(cache_path)
+
+    assert context.season_key == "2025-26"
+    assert context.season_type == "Playoffs"
+
+
+def test_load_raw_cache_context_rejects_missing_metadata(tmp_path: Path) -> None:
+    with pytest.raises(RawCacheMetadataError, match="Missing raw-cache metadata"):
+        load_raw_cache_context(tmp_path / "missing.csv")
 
 
 def test_load_or_fetch_history_returns_stable_paths_for_all_requests(

@@ -61,9 +61,18 @@ nba-forecast fetch-history \
 `fetch-history` is also cache-first. It requests only missing files unless
 `--force` is supplied.
 
+Fetch or reuse the current playoff cache:
+
+```bash
+nba-forecast fetch-games \
+  --season 2025-26 \
+  --season-type Playoffs \
+  --cache-dir data/raw
+```
+
 ## Build Canonical Games
 
-Build from any source-shaped raw CSV:
+Build from a source-shaped raw CSV with its adjacent metadata sidecar:
 
 ```bash
 nba-forecast build-games \
@@ -75,7 +84,18 @@ The command transforms and validates the rows before writing
 `processed/games.parquet` and `nba_forecast.duckdb`.
 
 `--raw-csv` accepts one or more paths. Pass all season-level source caches to
-build the combined historical game table used by temporal evaluation.
+build the combined historical game table used by temporal evaluation. The
+command rejects files without valid metadata because `season_type` and
+`season_key` cannot be safely inferred from game rows alone.
+
+Build the verified regular-season history plus current playoffs:
+
+```bash
+nba-forecast build-games \
+  --raw-csv data/raw/nba_stats/league_game_finder/*/regular-season.csv \
+    data/raw/nba_stats/league_game_finder/2025-26/playoffs.csv \
+  --output-dir data
+```
 
 ## Verify Processed Output
 
@@ -145,14 +165,16 @@ artifacts remain excluded from Git.
 nba-forecast predict-matchup \
   --games-parquet data/processed/games.parquet \
   --model-bundle artifacts/models/2026-06-11-recent5-raw.joblib \
-  --game-id scheduled-example \
-  --game-date 2026-06-12 \
+  --game-id scheduled-2026-finals-game-5 \
+  --game-date 2026-06-13 \
   --as-of-date 2026-06-11 \
-  --season-id 22025 \
-  --home-team-id 1610612752 \
-  --away-team-id 1610612759 \
-  --home-team-abbreviation NYK \
-  --away-team-abbreviation SAS \
+  --season-id 42025 \
+  --season-type Playoffs \
+  --season-key 2025-26 \
+  --home-team-id 1610612759 \
+  --away-team-id 1610612752 \
+  --home-team-abbreviation SAS \
+  --away-team-abbreviation NYK \
   --output-dir .
 ```
 
@@ -165,10 +187,10 @@ Only completed games with `game_date < as_of_date` are included. Because the
 current canonical contract has dates rather than timestamps, same-day games
 are conservatively excluded.
 
-The current local `data/processed/games.parquet` ends on April 12, 2026 and
-contains regular-season games only. The example command verifies the workflow;
-refresh the processed history with 2025-26 playoff games before describing an
-output as a current Finals prediction.
+The verified June 11 refresh includes completed games through June 10. The
+example command produced a `54.57%` SAS home-win probability for Finals Game
+5. This is a timestamped workflow smoke prediction, not measured playoff
+accuracy.
 
 ## Run a Seeded Series Simulation
 

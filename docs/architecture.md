@@ -9,7 +9,7 @@ nba_api LeagueGameFinder
 immutable raw team-game CSV + source metadata
         |
         v
-pair home and away rows into canonical completed games
+contextual transform preserving season_id, season_type, and season_key
         |
         v
 validate identifiers, teams, outcomes, scores, and uniqueness
@@ -23,6 +23,11 @@ games.parquet       DuckDB games table
 The raw cache preserves source-shaped records. Transformation and validation
 are pure, network-free operations so tests and historical rebuilds remain
 reliable when the source is unavailable.
+
+The adjacent metadata sidecar supplies the request's season and season type.
+The raw CSV remains unmodified. Canonical `season_key` uses that season label
+to connect regular-season and playoff state without rewriting the source
+`season_id`.
 
 ## Component Boundaries
 
@@ -59,7 +64,7 @@ surface.
 processed/games.parquet
         |
         v
-shifted team state + sequential pre-game Elo
+shifted team state + sequential pre-game Elo by season_key
         |
         v
 features/games.parquet
@@ -70,6 +75,10 @@ explicit season holdout -> comparable baseline_metrics.csv
 
 The feature table stores identifiers and the target for evaluation, but trained
 models receive only the authoritative `MODEL_FEATURE_COLUMNS` list.
+
+Rolling state resets and Elo offseason reversion occur only when `season_key`
+changes. A source transition from regular-season `season_id=22025` to playoff
+`season_id=42025` within `season_key=2025-26` does not reset team state.
 
 ## Model and Simulation Boundary
 

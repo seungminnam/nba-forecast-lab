@@ -54,6 +54,33 @@ Season game counts:
 
 The shortened 2019-20 and 2020-21 seasons reflect the real NBA schedules.
 
+## 2025-26 Playoff Refresh
+
+On 2026-06-11, the cache-first source workflow fetched completed 2025-26
+playoff games:
+
+```text
+Season type: Playoffs
+Source team-game rows: 168
+Canonical completed games: 84
+Canonical date range: 2026-04-18 through 2026-06-10
+Source season ID: 42025
+Shared season key: 2025-26
+```
+
+Combining the playoff cache with the 11 regular-season caches produced:
+
+```text
+Canonical games: 13,293
+Unique game IDs: 13,293
+Canonical date range: 2015-10-27 through 2026-06-10
+```
+
+All four April 18 first-round games showed `games_played=82` for both teams
+before tip-off. This verifies that rolling team state continued from the
+regular season rather than resetting at the `22025` to `42025` source-ID
+boundary.
+
 ## Observed Source Anomaly
 
 For `GAME_ID 0022500602`, both source rows contained the same matchup string:
@@ -78,5 +105,8 @@ with each row's team abbreviation. A regression test preserves this behavior.
   validation must complete before processed artifacts are accepted.
 - Player availability and injury data are not provided by this Phase 0/1
   source contract.
-- The current measured model comparison uses regular-season games only.
-  Playoff source caches are added before playoff-specific evaluation.
+- The current refresh combines `Regular Season` and `Playoffs`; it does not
+  yet ingest Play-In tournament games.
+- The current measured model comparison and final model evaluation use
+  regular-season games only. The playoff cache supports current inference but
+  does not establish playoff predictive accuracy.

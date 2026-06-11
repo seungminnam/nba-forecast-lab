@@ -50,7 +50,7 @@ def build_team_state(games: pd.DataFrame) -> pd.DataFrame:
     )
     rows["net_rating"] = rows["offensive_rating"] - rows["defensive_rating"]
 
-    group_keys = ["season_id", "team_id"]
+    group_keys = ["season_key", "team_id"]
     rows = rows.sort_values(group_keys + ["game_date", "game_id"], ignore_index=True)
     grouped = rows.groupby(group_keys, sort=False)
     rows["games_played"] = grouped.cumcount()
@@ -87,6 +87,7 @@ def _team_rows(games: pd.DataFrame, *, is_home: bool) -> pd.DataFrame:
             "game_id": games["game_id"],
             "game_date": games["game_date"],
             "season_id": games["season_id"],
+            "season_key": games["season_key"],
             "team_id": games[f"{team_side}_team_id"],
             "opponent_id": games[f"{opponent_side}_team_id"],
             "is_home": int(is_home),
@@ -112,4 +113,3 @@ def _estimated_possessions(
     tov: pd.Series,
 ) -> pd.Series:
     return fga + 0.44 * fta - oreb + tov
-

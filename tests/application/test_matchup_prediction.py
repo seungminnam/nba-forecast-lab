@@ -20,6 +20,8 @@ def test_matchup_prediction_scores_exact_as_of_feature_row() -> None:
         game_id="scheduled-1",
         game_date=pd.Timestamp("2025-10-27"),
         season_id="22025",
+        season_type="Regular Season",
+        season_key="2025-26",
         home_team_id=1,
         away_team_id=2,
         home_team_abbreviation="HOM",
@@ -44,6 +46,8 @@ def test_matchup_prediction_scores_exact_as_of_feature_row() -> None:
     assert report["feature_version"] == "model-features-v1"
     assert report["final_outcome"] is None
     assert report["matchup"]["home_team_abbreviation"] == "HOM"
+    assert report["matchup"]["season_type"] == "Regular Season"
+    assert report["matchup"]["season_key"] == "2025-26"
     assert set(report["features"]) == set(MODEL_FEATURE_COLUMNS)
 
 
@@ -80,6 +84,8 @@ def _games() -> pd.DataFrame:
                 "game_id": f"game-{index}",
                 "game_date": pd.Timestamp(date),
                 "season_id": "22025",
+                "season_type": "Regular Season",
+                "season_key": "2025-26",
                 "home_team_id": 1,
                 "away_team_id": 2,
                 "home_team_abbreviation": "HOM",

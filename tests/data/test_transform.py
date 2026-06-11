@@ -20,7 +20,11 @@ def team_rows() -> pd.DataFrame:
 def test_team_rows_to_games_pairs_home_and_away_rows(
     team_rows: pd.DataFrame,
 ) -> None:
-    games = team_rows_to_games(team_rows)
+    games = team_rows_to_games(
+        team_rows,
+        season_type="Regular Season",
+        season_key="2025-26",
+    )
 
     assert games["game_id"].is_unique
     assert games["game_id"].tolist() == ["0022500001", "0022500002"]
@@ -35,6 +39,8 @@ def test_team_rows_to_games_pairs_home_and_away_rows(
     assert first_game["away_fga"] == 91
     assert first_game["home_oreb"] == 10
     assert first_game["away_tov"] == 15
+    assert first_game["season_type"] == "Regular Season"
+    assert first_game["season_key"] == "2025-26"
 
     second_game = games.iloc[1]
     assert second_game["home_team_id"] == 3
@@ -48,7 +54,11 @@ def test_team_rows_to_games_rejects_game_missing_away_row(
     incomplete_rows = team_rows.loc[team_rows["TEAM_ID"] != 2]
 
     with pytest.raises(CanonicalGameError, match="exactly two team rows"):
-        team_rows_to_games(incomplete_rows)
+        team_rows_to_games(
+            incomplete_rows,
+            season_type="Regular Season",
+            season_key="2025-26",
+        )
 
 
 def test_team_rows_to_games_parses_home_team_from_repeated_away_matchup(
@@ -58,7 +68,38 @@ def test_team_rows_to_games_parses_home_team_from_repeated_away_matchup(
     first_game = repeated_matchup_rows["GAME_ID"] == "0022500001"
     repeated_matchup_rows.loc[first_game, "MATCHUP"] = "AWY @ HOM"
 
-    games = team_rows_to_games(repeated_matchup_rows)
+    games = team_rows_to_games(
+        repeated_matchup_rows,
+        season_type="Regular Season",
+        season_key="2025-26",
+    )
 
     assert games.loc[0, "home_team_abbreviation"] == "HOM"
     assert games.loc[0, "away_team_abbreviation"] == "AWY"
+
+
+def test_team_rows_to_games_preserves_playoff_source_context(
+    team_rows: pd.DataFrame,
+) -> None:
+    playoff_rows = team_rows.assign(SEASON_ID="42025")
+
+    games = team_rows_to_games(
+        playoff_rows,
+        season_type="Playoffs",
+        season_key="2025-26",
+    )
+
+    assert games["season_id"].eq("42025").all()
+    assert games["season_type"].eq("Playoffs").all()
+    assert games["season_key"].eq("2025-26").all()
+
+
+def test_team_rows_to_games_rejects_source_id_inconsistent_with_context(
+    team_rows: pd.DataFrame,
+) -> None:
+    with pytest.raises(CanonicalGameError, match="inconsistent with"):
+        team_rows_to_games(
+            team_rows,
+            season_type="Playoffs",
+            season_key="2025-26",
+        )

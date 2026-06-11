@@ -35,6 +35,10 @@ immutable raw cache -> canonical games -> validation -> Parquet + DuckDB
                                            features, models, simulation
 ```
 
+Canonical games preserve NBA Stats `season_id` and `season_type`, while a
+separate `season_key` keeps rolling state and Elo continuous from the regular
+season into the playoffs.
+
 ## Current Verified Status
 
 - Cache-first `nba_api` source adapter with adjacent source metadata
@@ -43,6 +47,9 @@ immutable raw cache -> canonical games -> validation -> Parquet + DuckDB
 - Offline fixture build and network-free automated tests
 - Live source smoke test: 2,460 NBA Stats team rows transformed into 1,230
   canonical 2025-26 regular-season games
+- Live playoff refresh: 168 NBA Stats team rows transformed into 84 completed
+  2025-26 playoff games through June 10, 2026
+- Regular-season-to-playoff rolling-state and Elo continuity
 - Shifted rolling team state and sequential pre-game Elo
 - Explicit season holdouts and comparable probability baseline metrics
 - Auditable `as_of_date` scheduled-matchup prediction workflow
@@ -166,7 +173,9 @@ nba-forecast build-games \
 ```
 
 `--raw-csv` accepts multiple season files, so a complete historical build can
-combine the season-level raw caches in one command.
+combine the season-level raw caches in one command. Every raw CSV requires its
+adjacent `.metadata.json` sidecar so the build can preserve source season type
+and derive the shared `season_key`.
 
 Expected outputs:
 
@@ -181,6 +190,11 @@ Populate one raw source cache when network access is available:
 nba-forecast fetch-games \
   --season 2025-26 \
   --season-type "Regular Season" \
+  --cache-dir data/raw
+
+nba-forecast fetch-games \
+  --season 2025-26 \
+  --season-type Playoffs \
   --cache-dir data/raw
 ```
 
@@ -212,17 +226,21 @@ nba-forecast predict-matchup \
   --game-id scheduled-example \
   --game-date 2026-06-12 \
   --as-of-date 2026-06-11 \
-  --season-id 22025 \
-  --home-team-id 1610612752 \
-  --away-team-id 1610612759 \
-  --home-team-abbreviation NYK \
-  --away-team-abbreviation SAS \
+  --season-id 42025 \
+  --season-type Playoffs \
+  --season-key 2025-26 \
+  --home-team-id 1610612759 \
+  --away-team-id 1610612752 \
+  --home-team-abbreviation SAS \
+  --away-team-abbreviation NYK \
   --output-dir .
 ```
 
-The current local processed artifact ends on **April 12, 2026** and contains
-regular-season games only. It must be refreshed with 2025-26 playoff games
-before any output is described as a current Finals prediction.
+The verified local refresh now ends on **June 10, 2026** and includes 84
+completed 2025-26 playoff games. A June 11 cutoff smoke prediction for Finals
+Game 5 estimated a `54.57%` SAS home-win probability. This verifies the
+current as-of workflow; it is not measured playoff accuracy and the frozen
+model remains trained and evaluated on regular-season games only.
 
 ## Documentation
 
@@ -238,6 +256,7 @@ before any output is described as a current Finals prediction.
 - [Series simulation contract](docs/decisions/0002-series-simulation-contract.md)
 - [As-of matchup prediction contract](docs/decisions/0003-as-of-matchup-prediction-contract.md)
 - [Simulator Lab UI design](docs/superpowers/specs/2026-06-11-simulator-lab-ui-design.md)
+- [Playoff data continuity design](docs/superpowers/specs/2026-06-11-playoff-data-continuity-design.md)
 
 ## Attribution and Limitations
 

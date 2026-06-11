@@ -11,7 +11,11 @@ import pandas as pd
 from nba_forecast.application.matchup_prediction import predict_scheduled_matchup
 from nba_forecast.application.simulator_lab import SimulatorLabInput, run_simulator_lab
 from nba_forecast.config import HISTORICAL_SEASONS, RAW_DATA_DIR
-from nba_forecast.data.source_nba import load_or_fetch_history, load_or_fetch_team_games
+from nba_forecast.data.source_nba import (
+    load_or_fetch_history,
+    load_or_fetch_team_games,
+    load_raw_cache_context,
+)
 from nba_forecast.data.storage import write_processed_games
 from nba_forecast.data.transform import team_rows_to_games
 from nba_forecast.evaluation.baselines import evaluate_baselines
@@ -69,6 +73,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             args.game_date,
             args.as_of_date,
             args.season_id,
+            args.season_type,
+            args.season_key,
             args.home_team_id,
             args.away_team_id,
             args.home_team_abbreviation,
@@ -86,7 +92,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     build_parser = subparsers.add_parser(
         "build-games",
-        help="Build validated canonical games from a raw team-game CSV.",
+        help="Build canonical games from raw CSVs and adjacent metadata.",
     )
     build_parser.add_argument("--raw-csv", type=Path, nargs="+", required=True)
     build_parser.add_argument("--output-dir", type=Path, required=True)
@@ -163,6 +169,8 @@ def _build_parser() -> argparse.ArgumentParser:
     prediction_parser.add_argument("--game-date", type=pd.Timestamp, required=True)
     prediction_parser.add_argument("--as-of-date", type=pd.Timestamp, required=True)
     prediction_parser.add_argument("--season-id", required=True)
+    prediction_parser.add_argument("--season-type", required=True)
+    prediction_parser.add_argument("--season-key", required=True)
     prediction_parser.add_argument("--home-team-id", type=int, required=True)
     prediction_parser.add_argument("--away-team-id", type=int, required=True)
     prediction_parser.add_argument("--home-team-abbreviation", required=True)
@@ -173,23 +181,30 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _build_games(raw_csv: list[Path], output_dir: Path) -> int:
-    team_rows = pd.concat(
-        [
-            pd.read_csv(
-                path,
-                dtype={"GAME_ID": "string", "SEASON_ID": "string"},
-            )
-            for path in raw_csv
-        ],
+    games = pd.concat(
+        [_transform_raw_cache(path) for path in raw_csv],
         ignore_index=True,
     )
-    games = team_rows_to_games(team_rows)
+    games = games.sort_values(["game_date", "game_id"], ignore_index=True)
     parquet_path, database_path = write_processed_games(games, output_dir)
     print(
         f"Wrote {len(games)} canonical games to {parquet_path} "
         f"and {database_path}"
     )
     return 0
+
+
+def _transform_raw_cache(path: Path) -> pd.DataFrame:
+    context = load_raw_cache_context(path)
+    rows = pd.read_csv(
+        path,
+        dtype={"GAME_ID": "string", "SEASON_ID": "string"},
+    )
+    return team_rows_to_games(
+        rows,
+        season_type=context.season_type,
+        season_key=context.season_key,
+    )
 
 
 def _fetch_games(
@@ -294,6 +309,8 @@ def _predict_matchup(
     game_date: pd.Timestamp,
     as_of_date: pd.Timestamp,
     season_id: str,
+    season_type: str,
+    season_key: str,
     home_team_id: int,
     away_team_id: int,
     home_team_abbreviation: str,
@@ -308,6 +325,8 @@ def _predict_matchup(
             game_id=game_id,
             game_date=game_date,
             season_id=season_id,
+            season_type=season_type,
+            season_key=season_key,
             home_team_id=home_team_id,
             away_team_id=away_team_id,
             home_team_abbreviation=home_team_abbreviation,

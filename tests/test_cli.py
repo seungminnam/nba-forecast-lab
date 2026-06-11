@@ -21,6 +21,35 @@ MULTI_SEASON_FIXTURE_PATH = (
 )
 
 
+def _write_contextual_raw_csv(
+    rows: pd.DataFrame,
+    path: Path,
+    *,
+    season: str,
+    season_type: str = "Regular Season",
+) -> Path:
+    rows.to_csv(path, index=False)
+    path.with_suffix(".metadata.json").write_text(
+        json.dumps({"season": season, "season_type": season_type})
+    )
+    return path
+
+
+def _write_multi_season_raw_caches(tmp_path: Path) -> list[Path]:
+    rows = pd.read_csv(
+        MULTI_SEASON_FIXTURE_PATH,
+        dtype={"GAME_ID": "string", "SEASON_ID": "string"},
+    )
+    return [
+        _write_contextual_raw_csv(
+            rows.loc[rows["SEASON_ID"] == season_id],
+            tmp_path / f"{season}.csv",
+            season=season,
+        )
+        for season, season_id in (("2024-25", "22024"), ("2025-26", "22025"))
+    ]
+
+
 def test_build_games_command_creates_processed_outputs(
     tmp_path: Path,
     capsys: object,
@@ -43,14 +72,7 @@ def test_build_games_command_creates_processed_outputs(
 
 
 def test_build_games_command_combines_multiple_raw_csv_files(tmp_path: Path) -> None:
-    rows = pd.read_csv(
-        MULTI_SEASON_FIXTURE_PATH,
-        dtype={"GAME_ID": "string", "SEASON_ID": "string"},
-    )
-    first_path = tmp_path / "first.csv"
-    second_path = tmp_path / "second.csv"
-    rows.loc[rows["SEASON_ID"] == "22024"].to_csv(first_path, index=False)
-    rows.loc[rows["SEASON_ID"] == "22025"].to_csv(second_path, index=False)
+    first_path, second_path = _write_multi_season_raw_caches(tmp_path)
 
     exit_code = main(
         [
@@ -67,17 +89,63 @@ def test_build_games_command_combines_multiple_raw_csv_files(tmp_path: Path) -> 
     assert exit_code == 0
     assert len(games) == 4
     assert games["season_id"].tolist() == ["22024", "22024", "22025", "22025"]
+    assert games["season_key"].tolist() == [
+        "2024-25",
+        "2024-25",
+        "2025-26",
+        "2025-26",
+    ]
+
+
+def test_build_games_command_combines_regular_season_and_playoffs(
+    tmp_path: Path,
+) -> None:
+    rows = pd.read_csv(
+        FIXTURE_PATH,
+        dtype={"GAME_ID": "string", "SEASON_ID": "string"},
+    )
+    regular_rows = rows.loc[rows["GAME_ID"] == "0022500001"]
+    playoff_rows = rows.loc[rows["GAME_ID"] == "0022500002"].assign(SEASON_ID="42025")
+    regular_path = _write_contextual_raw_csv(
+        regular_rows,
+        tmp_path / "regular.csv",
+        season="2025-26",
+    )
+    playoff_path = _write_contextual_raw_csv(
+        playoff_rows,
+        tmp_path / "playoffs.csv",
+        season="2025-26",
+        season_type="Playoffs",
+    )
+
+    exit_code = main(
+        [
+            "build-games",
+            "--raw-csv",
+            str(regular_path),
+            str(playoff_path),
+            "--output-dir",
+            str(tmp_path / "output"),
+        ]
+    )
+
+    games = pd.read_parquet(tmp_path / "output" / "processed" / "games.parquet")
+    assert exit_code == 0
+    assert games["season_id"].tolist() == ["22025", "42025"]
+    assert games["season_type"].tolist() == ["Regular Season", "Playoffs"]
+    assert games["season_key"].eq("2025-26").all()
 
 
 def test_feature_and_baseline_commands_create_reproducible_outputs(
     tmp_path: Path,
 ) -> None:
+    raw_paths = _write_multi_season_raw_caches(tmp_path)
     assert (
         main(
             [
                 "build-games",
                 "--raw-csv",
-                str(MULTI_SEASON_FIXTURE_PATH),
+                *(str(path) for path in raw_paths),
                 "--output-dir",
                 str(tmp_path),
             ]
@@ -182,12 +250,13 @@ def test_simulate_series_command_writes_json_report(tmp_path: Path) -> None:
 
 
 def test_predict_matchup_command_writes_auditable_json_report(tmp_path: Path) -> None:
+    raw_paths = _write_multi_season_raw_caches(tmp_path)
     assert (
         main(
             [
                 "build-games",
                 "--raw-csv",
-                str(MULTI_SEASON_FIXTURE_PATH),
+                *(str(path) for path in raw_paths),
                 "--output-dir",
                 str(tmp_path),
             ]
@@ -212,6 +281,10 @@ def test_predict_matchup_command_writes_auditable_json_report(tmp_path: Path) ->
             "2025-10-25",
             "--season-id",
             "22025",
+            "--season-type",
+            "Regular Season",
+            "--season-key",
+            "2025-26",
             "--home-team-id",
             "1",
             "--away-team-id",
@@ -237,6 +310,8 @@ def test_predict_matchup_command_writes_auditable_json_report(tmp_path: Path) ->
     assert report["feature_version"] == "model-features-v1"
     assert report["final_outcome"] is None
     assert report["matchup"]["game_id"] == "scheduled-1"
+    assert report["matchup"]["season_type"] == "Regular Season"
+    assert report["matchup"]["season_key"] == "2025-26"
     assert 0.0 < report["home_win_probability"] < 1.0
     assert set(report["features"]) == set(MODEL_FEATURE_COLUMNS)
 

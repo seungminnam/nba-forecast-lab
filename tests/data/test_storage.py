@@ -14,7 +14,11 @@ def test_write_processed_games_creates_parquet_and_duckdb(tmp_path: Path) -> Non
         FIXTURE_PATH,
         dtype={"GAME_ID": "string", "SEASON_ID": "string"},
     )
-    games = team_rows_to_games(team_rows)
+    games = team_rows_to_games(
+        team_rows,
+        season_type="Regular Season",
+        season_key="2025-26",
+    )
 
     parquet_path, database_path = write_processed_games(games, tmp_path)
 
@@ -25,6 +29,8 @@ def test_write_processed_games_creates_parquet_and_duckdb(tmp_path: Path) -> Non
 
     persisted_parquet = pd.read_parquet(parquet_path)
     assert persisted_parquet["game_id"].tolist() == ["0022500001", "0022500002"]
+    assert persisted_parquet["season_type"].eq("Regular Season").all()
+    assert persisted_parquet["season_key"].eq("2025-26").all()
 
     with duckdb.connect(str(database_path), read_only=True) as connection:
         persisted_ids = connection.execute(
@@ -32,4 +38,3 @@ def test_write_processed_games_creates_parquet_and_duckdb(tmp_path: Path) -> Non
         ).fetchall()
 
     assert persisted_ids == [("0022500001",), ("0022500002",)]
-
