@@ -152,6 +152,38 @@ synthetic example verifies scheduling, stopping, and distribution behavior; it
 is not an NBA matchup prediction. A later application workflow will construct
 scheduled-game feature rows and query the frozen model bundle.
 
+Write the same assumption-based result as a machine-readable JSON report:
+
+```bash
+nba-forecast simulate-series \
+  --team-a Knicks \
+  --team-b Spurs \
+  --team-a-home-probability 0.62 \
+  --team-a-away-probability 0.47 \
+  --simulations 10000 \
+  --seed 2026 \
+  --output-dir .
+```
+
+This writes `artifacts/reports/series_simulation.json`.
+
+## Run the Simulator Lab UI
+
+```bash
+streamlit run streamlit_app.py
+```
+
+Open the printed local URL, normally `http://localhost:8501`. The page is an
+assumption-based demo and must not be described as a frozen-model matchup
+prediction.
+
+Verified locally on 2026-06-11:
+
+- high-contrast dark UI rendered without browser console errors
+- assumption-based warning and controls were visible
+- two Vega/Altair distribution charts rendered
+- Streamlit AppTest verified default results and invalid duplicate-team input
+
 ## Failure Recovery
 
 - If NBA Stats is unavailable, retain and use the existing raw cache.

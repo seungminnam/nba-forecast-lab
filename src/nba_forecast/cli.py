@@ -1,12 +1,14 @@
 """Command-line workflows for NBA Forecast Lab."""
 
 import argparse
+import json
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Optional
 
 import pandas as pd
 
+from nba_forecast.application.simulator_lab import SimulatorLabInput, run_simulator_lab
 from nba_forecast.config import HISTORICAL_SEASONS, RAW_DATA_DIR
 from nba_forecast.data.source_nba import load_or_fetch_history, load_or_fetch_team_games
 from nba_forecast.data.storage import write_processed_games
@@ -44,6 +46,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             args.features_parquet,
             args.train_seasons,
             args.test_season,
+            args.output_dir,
+        )
+    if args.command == "simulate-series":
+        return _simulate_series(
+            args.team_a,
+            args.team_b,
+            args.team_a_home_probability,
+            args.team_a_away_probability,
+            args.simulations,
+            args.seed,
             args.output_dir,
         )
 
@@ -103,6 +115,26 @@ def _build_parser() -> argparse.ArgumentParser:
     evaluation_parser.add_argument("--train-seasons", nargs="+", required=True)
     evaluation_parser.add_argument("--test-season", required=True)
     evaluation_parser.add_argument("--output-dir", type=Path, required=True)
+
+    simulation_parser = subparsers.add_parser(
+        "simulate-series",
+        help="Run an assumption-based best-of-seven series simulation.",
+    )
+    simulation_parser.add_argument("--team-a", required=True)
+    simulation_parser.add_argument("--team-b", required=True)
+    simulation_parser.add_argument(
+        "--team-a-home-probability",
+        type=float,
+        required=True,
+    )
+    simulation_parser.add_argument(
+        "--team-a-away-probability",
+        type=float,
+        required=True,
+    )
+    simulation_parser.add_argument("--simulations", type=int, default=10_000)
+    simulation_parser.add_argument("--seed", type=int, default=2026)
+    simulation_parser.add_argument("--output-dir", type=Path, required=True)
 
     return parser
 
@@ -192,6 +224,33 @@ def _evaluate_baselines(
     report_path = report_dir / "baseline_metrics.csv"
     results.to_csv(report_path, index=False)
     print(f"Wrote {len(results)} baseline metric rows to {report_path}")
+    return 0
+
+
+def _simulate_series(
+    team_a: str,
+    team_b: str,
+    team_a_home_probability: float,
+    team_a_away_probability: float,
+    simulations: int,
+    seed: int,
+    output_dir: Path,
+) -> int:
+    output = run_simulator_lab(
+        SimulatorLabInput(
+            team_a=team_a,
+            team_b=team_b,
+            team_a_home_win_probability=team_a_home_probability,
+            team_a_away_win_probability=team_a_away_probability,
+            simulations=simulations,
+            seed=seed,
+        )
+    )
+    report_dir = output_dir / "artifacts" / "reports"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    report_path = report_dir / "series_simulation.json"
+    report_path.write_text(json.dumps(output.to_report(), indent=2, sort_keys=True))
+    print(f"Wrote seeded series simulation report to {report_path}")
     return 0
 
 

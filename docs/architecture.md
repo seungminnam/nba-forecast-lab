@@ -102,3 +102,25 @@ The current frozen model bundle evaluates prepared feature rows. Building
 future scheduled-game feature rows and connecting them to the simulation
 provider remains application-integration work; the simulator must not invent
 missing team state.
+
+## Simulator Lab Application Boundary
+
+`application/simulator_lab.py` is the shared application workflow used by both
+the CLI and Streamlit. It validates explicit assumptions, converts Team A's
+home and away win probabilities into the simulator's home-team probability
+provider, and returns chart-ready tables.
+
+```text
+CLI arguments or Streamlit controls
+        |
+        v
+SimulatorLabInput -> run_simulator_lab
+        |
+        +--> JSON report
+        |
+        +--> Streamlit metrics and charts
+```
+
+Neither CLI nor Streamlit trains a model during a request. The current UI is
+an assumption-based simulator lab; model-backed scheduled matchup prediction
+requires a future-game feature contract that does not yet exist.
