@@ -15,6 +15,12 @@ python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 ```
 
+On macOS, XGBoost also requires the OpenMP runtime:
+
+```bash
+brew install libomp
+```
+
 ## Raw NBA Stats Cache
 
 The NBA Stats source adapter is cache-first. A season and season type map to a
@@ -104,6 +110,19 @@ nba-forecast evaluate-baselines \
 
 The command rejects overlapping or reversed temporal splits and writes
 `artifacts/reports/baseline_metrics.csv`.
+
+## Compare Training Windows and Model Classes
+
+Until the model experiment is exposed through the consolidated Phase 3 CLI,
+run the validation-only comparison with:
+
+```bash
+python -c "from pathlib import Path; import pandas as pd; from nba_forecast.evaluation.model_comparison import compare_models_by_training_window; features = pd.read_parquet('data/features/games.parquet'); results = compare_models_by_training_window(features, validation_season='22024'); path = Path('artifacts/reports/training_window_validation.csv'); path.parent.mkdir(parents=True, exist_ok=True); results.to_csv(path, index=False); print(results.sort_values(['brier_score', 'log_loss']).to_string(index=False))"
+```
+
+This compares Logistic Regression and fixed-configuration XGBoost using recent
+three-season, recent five-season, and annually decayed full-history windows.
+It selects on the 2024-25 validation season and excludes all 2025-26 rows.
 
 ## Failure Recovery
 

@@ -1,5 +1,7 @@
 """Interpretable NBA home-win probability baselines."""
 
+from typing import Optional
+
 import pandas as pd
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
@@ -30,7 +32,11 @@ def elo_probability(frame: pd.DataFrame) -> pd.Series:
     return _clip(frame["elo_home_win_probability"].astype(float))
 
 
-def fit_logistic_regression(train: pd.DataFrame) -> Pipeline:
+def fit_logistic_regression(
+    train: pd.DataFrame,
+    *,
+    sample_weight: Optional[pd.Series] = None,
+) -> Pipeline:
     """Fit a regularized Logistic Regression on declared model features."""
     model = Pipeline(
         [
@@ -42,7 +48,16 @@ def fit_logistic_regression(train: pd.DataFrame) -> Pipeline:
             ),
         ]
     )
-    model.fit(train[list(MODEL_FEATURE_COLUMNS)], train["home_win"])
+    fit_params = (
+        {"classifier__sample_weight": sample_weight}
+        if sample_weight is not None
+        else {}
+    )
+    model.fit(
+        train[list(MODEL_FEATURE_COLUMNS)],
+        train["home_win"],
+        **fit_params,
+    )
     return model
 
 

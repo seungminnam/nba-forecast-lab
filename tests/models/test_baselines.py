@@ -33,6 +33,15 @@ def test_logistic_regression_returns_bounded_probabilities() -> None:
 
     assert len(probabilities) == 2
     assert probabilities.between(0, 1, inclusive="neither").all()
+
+
+def test_logistic_regression_accepts_sample_weights() -> None:
+    frame = _model_frame(20)
+    weights = pd.Series([0.5] * 10 + [1.0] * 10)
+
+    model = fit_logistic_regression(frame, sample_weight=weights)
+
+    assert len(logistic_regression_probability(model, frame)) == len(frame)
     assert model.named_steps["classifier"].solver == "liblinear"
 
 

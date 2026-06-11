@@ -63,28 +63,28 @@ git commit -m "feat: backfill and evaluate historical nba baselines"
 - Create: `tests/evaluation/test_model_comparison.py`
 - Modify: `docs/experiments.md`
 
-- [ ] **Step 1: Add XGBoost dependency and failing tests**
+- [x] **Step 1: Add XGBoost dependency and failing tests**
 
 Test bounded probabilities, deterministic fixed-seed fitting, and training
 window selection for recent 3 seasons, recent 5 seasons, and decayed full
 history.
 
-- [ ] **Step 2: Implement XGBoost pipeline**
+- [x] **Step 2: Implement XGBoost pipeline**
 
 Use median imputation and a conservative fixed configuration before any tuning.
 Support optional sample weights for older-game decay.
 
-- [ ] **Step 3: Implement comparable window experiment**
+- [x] **Step 3: Implement comparable window experiment**
 
 Evaluate Logistic Regression and XGBoost under the three training-window
 strategies on identical validation rows.
 
-- [ ] **Step 4: Run real history experiment and document selection**
+- [x] **Step 4: Run real history experiment and document selection**
 
 Select the model/window using validation Brier Score and Log Loss. Keep the
 2025-26 test season untouched.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```bash
 git commit -m "feat: compare xgboost training windows"
