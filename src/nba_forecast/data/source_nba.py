@@ -2,13 +2,28 @@
 
 import json
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Optional
 
 import pandas as pd
 
+from nba_forecast.data.contracts import expected_season_id
+
 Fetcher = Callable[[str, str], pd.DataFrame]
+
+
+class RawCacheMetadataError(ValueError):
+    """Raised when a raw-cache metadata sidecar is missing or invalid."""
+
+
+@dataclass(frozen=True)
+class RawCacheContext:
+    """Validated request context used to transform one raw cache."""
+
+    season_key: str
+    season_type: str
 
 
 def raw_cache_path(cache_dir: Path, season: str, season_type: str) -> Path:
@@ -21,6 +36,33 @@ def raw_cache_path(cache_dir: Path, season: str, season_type: str) -> Path:
         / season
         / f"{season_type_slug}.csv"
     )
+
+
+def load_raw_cache_context(cache_path: Path) -> RawCacheContext:
+    """Return validated season context from a raw cache's metadata sidecar."""
+    metadata_path = cache_path.with_suffix(".metadata.json")
+    if not metadata_path.exists():
+        raise RawCacheMetadataError(f"Missing raw-cache metadata: {metadata_path}")
+    try:
+        metadata = json.loads(metadata_path.read_text())
+    except (json.JSONDecodeError, OSError) as error:
+        raise RawCacheMetadataError(
+            f"Invalid raw-cache metadata: {metadata_path}"
+        ) from error
+
+    season = metadata.get("season")
+    season_type = metadata.get("season_type")
+    if not isinstance(season, str) or not season.strip():
+        raise RawCacheMetadataError(
+            f"Invalid season in raw-cache metadata: {metadata_path}"
+        )
+    try:
+        expected_season_id(str(season_type), season)
+    except ValueError as error:
+        raise RawCacheMetadataError(
+            f"Invalid season context in raw-cache metadata: {metadata_path}"
+        ) from error
+    return RawCacheContext(season_key=season, season_type=str(season_type))
 
 
 def load_or_fetch_team_games(

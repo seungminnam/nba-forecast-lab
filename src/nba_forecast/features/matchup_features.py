@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from nba_forecast.data.contracts import CANONICAL_GAME_COLUMNS
+from nba_forecast.data.contracts import CANONICAL_GAME_COLUMNS, expected_season_id
 from nba_forecast.features.game_features import build_game_features
 
 
@@ -15,6 +15,8 @@ class ScheduledMatchup:
     game_id: str
     game_date: pd.Timestamp
     season_id: str
+    season_type: str
+    season_key: str
     home_team_id: int
     away_team_id: int
     home_team_abbreviation: str
@@ -57,6 +59,8 @@ def _scheduled_game_row(
         "game_id": matchup.game_id,
         "game_date": game_date,
         "season_id": matchup.season_id,
+        "season_type": matchup.season_type,
+        "season_key": matchup.season_key,
         "home_team_id": matchup.home_team_id,
         "away_team_id": matchup.away_team_id,
         "home_team_abbreviation": matchup.home_team_abbreviation,
@@ -89,3 +93,10 @@ def _validate_matchup(
         raise ValueError("home and away teams must differ")
     if not matchup.game_id.strip():
         raise ValueError("scheduled game_id must be non-empty")
+    try:
+        expected_id = expected_season_id(matchup.season_type, matchup.season_key)
+    except ValueError as error:
+        message = f"scheduled matchup has invalid season context: {error}"
+        raise ValueError(message) from error
+    if matchup.season_id != expected_id:
+        raise ValueError("scheduled matchup has inconsistent season context")

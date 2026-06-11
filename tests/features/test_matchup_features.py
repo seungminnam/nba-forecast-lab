@@ -27,6 +27,8 @@ def _games() -> pd.DataFrame:
                 "game_id": f"game-{index}",
                 "game_date": pd.Timestamp(date),
                 "season_id": "22025",
+                "season_type": "Regular Season",
+                "season_key": "2025-26",
                 "home_team_id": 1,
                 "away_team_id": 2,
                 "home_team_abbreviation": "HOM",
@@ -54,6 +56,8 @@ def _scheduled_third_game() -> ScheduledMatchup:
         game_id="game-3",
         game_date=pd.Timestamp("2025-10-25"),
         season_id="22025",
+        season_type="Regular Season",
+        season_key="2025-26",
         home_team_id=1,
         away_team_id=2,
         home_team_abbreviation="HOM",
@@ -107,3 +111,53 @@ def test_snapshot_rejects_as_of_date_after_scheduled_game() -> None:
             _scheduled_third_game(),
             as_of_date=pd.Timestamp("2025-10-26"),
         )
+
+
+def test_snapshot_rejects_invalid_scheduled_season_context() -> None:
+    invalid_matchup = ScheduledMatchup(
+        game_id="scheduled-invalid",
+        game_date=pd.Timestamp("2025-10-25"),
+        season_id="22025",
+        season_type="Playoffs",
+        season_key="2025-26",
+        home_team_id=1,
+        away_team_id=2,
+        home_team_abbreviation="HOM",
+        away_team_abbreviation="AWY",
+    )
+
+    with pytest.raises(ValueError, match="inconsistent season context"):
+        build_scheduled_matchup_features(
+            _games(),
+            invalid_matchup,
+            as_of_date=pd.Timestamp("2025-10-25"),
+        )
+
+
+def test_playoff_snapshot_matches_continuous_historical_features() -> None:
+    games = _games()
+    games.loc[2:, ["season_id", "season_type"]] = ["42025", "Playoffs"]
+    matchup = ScheduledMatchup(
+        game_id="game-3",
+        game_date=pd.Timestamp("2025-10-25"),
+        season_id="42025",
+        season_type="Playoffs",
+        season_key="2025-26",
+        home_team_id=1,
+        away_team_id=2,
+        home_team_abbreviation="HOM",
+        away_team_abbreviation="AWY",
+    )
+    expected = build_game_features(games).set_index("game_id").loc["game-3"]
+
+    actual = build_scheduled_matchup_features(
+        games,
+        matchup,
+        as_of_date=pd.Timestamp("2025-10-25"),
+    ).iloc[0]
+
+    pd.testing.assert_series_equal(
+        actual[list(MODEL_FEATURE_COLUMNS)],
+        expected[list(MODEL_FEATURE_COLUMNS)],
+        check_names=False,
+    )

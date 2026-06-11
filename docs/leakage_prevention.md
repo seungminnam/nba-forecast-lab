@@ -9,8 +9,9 @@ before that game's tip-off.
 
 - Canonical completed-game outcomes and box scores remain historical inputs,
   not pre-game features for their own game.
-- Team state is grouped by season and team, sorted by game date and game ID,
-  then shifted by one game before expanding or rolling aggregation.
+- Team state is grouped by continuous `season_key` and team, sorted by game
+  date and game ID, then shifted by one game before expanding or rolling
+  aggregation.
 - Season win percentage defaults to a neutral `0.5` before a team's first game.
 - Rolling windows 5, 10, and 20 require at least one prior game and remain null
   before one exists.
@@ -23,6 +24,8 @@ before that game's tip-off.
   `game_date < as_of_date`.
 - Scheduled inference reuses the historical feature builders through an
   ephemeral row that is never persisted as a completed canonical game.
+- The first playoff game can use completed regular-season history from the
+  same `season_key`; current and future playoff results remain excluded.
 
 ## Mutation-Based Regression Test
 
@@ -47,3 +50,16 @@ The scheduled snapshot test suite verifies:
 
 The strict date cutoff is conservative because exact tip-off and completion
 timestamps are not yet present in the canonical contract.
+
+## Playoff-Boundary Regression Tests
+
+The feature suite verifies that:
+
+1. A first playoff game receives rolling state from the completed regular
+   season.
+2. A regular-season-to-playoffs source-ID change does not trigger Elo
+   offseason reversion.
+3. A true `season_key` change still resets rolling state and applies Elo
+   offseason reversion.
+4. A scheduled playoff snapshot matches the same completed game's historical
+   pre-game features.

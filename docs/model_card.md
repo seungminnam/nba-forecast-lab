@@ -50,9 +50,16 @@ observed win rate across ten probability bins.
 
 ## Limitations
 
-- Uses regular-season team-level history only
-- The current local processed history ends on April 12, 2026 and must include
-  current playoff games before producing a current Finals estimate
+- Trained and evaluated on regular-season team-level games only; current
+  playoff inference uses the same features with completed playoff history but
+  has no measured playoff-accuracy claim
+- Continuous playoff inference sends season-to-date features such as
+  `games_played` beyond their regular-season training range, so probability
+  calibration may drift during later playoff rounds
+- The verified local processed history ends on June 10, 2026 and includes 84
+  completed 2025-26 playoff games
+- The current refresh does not include Play-In tournament games, so a
+  Play-In qualifier's first-round state would omit those completed games
 - Does not currently include injuries, player availability, travel, roster
   continuity, head-to-head matchup history, or playoff-specific effects
 - Current rolling features contain correlated summaries of team strength

@@ -21,6 +21,8 @@ def _games() -> pd.DataFrame:
                 "game_id": f"game-{index}",
                 "game_date": pd.Timestamp(date),
                 "season_id": "22025",
+                "season_type": "Regular Season",
+                "season_key": "2025-26",
                 "home_team_id": 1,
                 "away_team_id": 2,
                 "home_team_abbreviation": "HOM",
@@ -99,3 +101,31 @@ def test_rest_days_and_back_to_back_use_previous_game_date() -> None:
     assert home_team.loc["game-2", "is_back_to_back"] == 1
     assert home_team.loc["game-3", "rest_days"] == 3
     assert home_team.loc["game-3", "is_back_to_back"] == 0
+
+
+def test_first_playoff_game_continues_regular_season_team_state() -> None:
+    games = _games()
+    games.loc[2, ["season_id", "season_type"]] = ["42025", "Playoffs"]
+
+    team_state = build_team_state(games)
+    playoff_home = team_state.loc[
+        (team_state["game_id"] == "game-3") & (team_state["team_id"] == 1)
+    ].iloc[0]
+
+    assert playoff_home["games_played"] == 2
+    assert playoff_home["rest_days"] == 3
+    assert playoff_home["win_pct_5"] == 0.5
+
+
+def test_actual_new_season_resets_team_state() -> None:
+    games = _games()
+    games.loc[2, ["season_id", "season_key"]] = ["22026", "2026-27"]
+
+    team_state = build_team_state(games)
+    new_season_home = team_state.loc[
+        (team_state["game_id"] == "game-3") & (team_state["team_id"] == 1)
+    ].iloc[0]
+
+    assert new_season_home["games_played"] == 0
+    assert pd.isna(new_season_home["rest_days"])
+    assert pd.isna(new_season_home["win_pct_5"])

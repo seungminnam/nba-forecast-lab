@@ -37,6 +37,8 @@ home-team row and one away-team row.
 | `game_id` | string | Unique NBA game identifier | Yes |
 | `game_date` | date | Scheduled game date | Yes |
 | `season_id` | string | Source season identifier | Yes |
+| `season_type` | string | Source request type: `Regular Season` or `Playoffs` | Yes |
+| `season_key` | string | Shared NBA season continuity key, such as `2025-26` | Yes |
 | `home_team_id` | integer | Home team identifier | Yes |
 | `away_team_id` | integer | Away team identifier | Yes |
 | `home_team_abbreviation` | string | Home team abbreviation | Yes |
@@ -66,6 +68,8 @@ row.
   team rows contain the same `AWAY @ HOME` matchup string.
 - Home and away rows must have different team identifiers and matching game
   dates and season identifiers.
+- `season_id` remains unmodified source identity.
+- `season_type` and `season_key` come from the raw cache metadata sidecar.
 - Canonical games are sorted by game date and game identifier.
 
 ## Canonical Validation Rules
@@ -84,7 +88,7 @@ games.
 
 | Feature | Meaning |
 |---|---|
-| `games_played` | Earlier games played by this team in the season |
+| `games_played` | Earlier games played by this team in the continuous season |
 | `season_win_pct` | Shifted expanding season win percentage; neutral `0.5` before game one |
 | `rest_days` | Days since the team's previous game |
 | `is_back_to_back` | `1` when `rest_days == 1` |
@@ -94,6 +98,9 @@ games.
 | `net_rating_5/10/20` | Shifted rolling offensive minus defensive rating |
 
 Estimated possessions use `FGA + 0.44 * FTA - OREB + TOV`.
+
+Team state groups by `season_key` and team. Regular-season and playoff games
+therefore share rolling history, while an actual new NBA season resets state.
 
 ## Pre-Game Model Rows
 
@@ -114,6 +121,8 @@ A `ScheduledMatchup` contains only information known before tip-off:
 | `game_id` | Stable scheduled-game identifier |
 | `game_date` | Scheduled calendar date |
 | `season_id` | NBA season identifier |
+| `season_type` | Source request type |
+| `season_key` | Shared regular-season/playoff continuity key |
 | `home_team_id`, `away_team_id` | Team identifiers |
 | `home_team_abbreviation`, `away_team_abbreviation` | Display abbreviations |
 

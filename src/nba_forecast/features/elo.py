@@ -16,17 +16,17 @@ def build_elo_features(
     """Return pre-game Elo ratings and home-win probabilities."""
     ordered_games = games.sort_values(["game_date", "game_id"], ignore_index=True)
     ratings: dict[int, float] = {}
-    current_season: Optional[str] = None
+    current_season_key: Optional[str] = None
     rows: list[dict[str, object]] = []
 
     for game in ordered_games.itertuples(index=False):
-        season_id = str(game.season_id)
-        if current_season is not None and season_id != current_season:
+        season_key = str(game.season_key)
+        if current_season_key is not None and season_key != current_season_key:
             ratings = {
                 team_id: base_rating + offseason_reversion * (rating - base_rating)
                 for team_id, rating in ratings.items()
             }
-        current_season = season_id
+        current_season_key = season_key
 
         home_team_id = int(game.home_team_id)
         away_team_id = int(game.away_team_id)
@@ -58,4 +58,3 @@ def _home_win_probability(
 ) -> float:
     rating_difference = home_elo + home_advantage - away_elo
     return 1.0 / (1.0 + 10.0 ** (-rating_difference / 400.0))
-

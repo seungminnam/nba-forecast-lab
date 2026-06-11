@@ -16,7 +16,11 @@ def games() -> pd.DataFrame:
         FIXTURE_PATH,
         dtype={"GAME_ID": "string", "SEASON_ID": "string"},
     )
-    return team_rows_to_games(team_rows)
+    return team_rows_to_games(
+        team_rows,
+        season_type="Regular Season",
+        season_key="2025-26",
+    )
 
 
 def test_validate_games_accepts_valid_completed_games(games: pd.DataFrame) -> None:
@@ -33,6 +37,15 @@ def test_validate_games_accepts_valid_completed_games(games: pd.DataFrame) -> No
         ),
         (lambda games: games.assign(home_points=pd.NA), "scores must be present"),
         (lambda games: games.assign(home_win=2), "home_win must be 0 or 1"),
+        (
+            lambda games: games.assign(season_type="Pre Season"),
+            "unsupported season_type",
+        ),
+        (lambda games: games.assign(season_key=""), "season_key must be non-empty"),
+        (
+            lambda games: games.assign(season_id="42025"),
+            "inconsistent season context",
+        ),
     ],
 )
 def test_validate_games_rejects_invalid_completed_games(
@@ -57,4 +70,3 @@ def test_validate_games_reports_multiple_failed_rules(games: pd.DataFrame) -> No
 
     assert "home and away teams must differ" in str(error.value)
     assert "home_win must be 0 or 1" in str(error.value)
-

@@ -8,15 +8,22 @@ from nba_forecast.data.contracts import (
     CANONICAL_GAME_COLUMNS,
     SOURCE_TEAM_GAME_COLUMNS,
     CanonicalGameError,
+    expected_season_id,
 )
 
 CanonicalValue = Union[str, int, pd.Timestamp]
 
 
-def team_rows_to_games(team_rows: pd.DataFrame) -> pd.DataFrame:
+def team_rows_to_games(
+    team_rows: pd.DataFrame,
+    *,
+    season_type: str,
+    season_key: str,
+) -> pd.DataFrame:
     """Pair NBA Stats team-game rows into one chronologically sorted game row."""
     rows = team_rows.rename(columns=lambda column: str(column).upper()).copy()
     _require_source_columns(rows)
+    _validate_season_context(rows, season_type, season_key)
 
     rows["GAME_ID"] = rows["GAME_ID"].astype("string")
     rows["SEASON_ID"] = rows["SEASON_ID"].astype("string")
@@ -60,6 +67,8 @@ def team_rows_to_games(team_rows: pd.DataFrame) -> pd.DataFrame:
                 "game_id": str(game_id),
                 "game_date": home["GAME_DATE"],
                 "season_id": str(home["SEASON_ID"]),
+                "season_type": season_type,
+                "season_key": season_key,
                 "home_team_id": int(home["TEAM_ID"]),
                 "away_team_id": int(away["TEAM_ID"]),
                 "home_team_abbreviation": str(home["TEAM_ABBREVIATION"]),
@@ -89,6 +98,23 @@ def _require_source_columns(rows: pd.DataFrame) -> None:
     if missing:
         missing_columns = ", ".join(missing)
         raise CanonicalGameError(f"Missing required source columns: {missing_columns}")
+
+
+def _validate_season_context(
+    rows: pd.DataFrame,
+    season_type: str,
+    season_key: str,
+) -> None:
+    try:
+        expected_id = expected_season_id(season_type, season_key)
+    except ValueError as error:
+        raise CanonicalGameError(str(error)) from error
+    source_ids = rows["SEASON_ID"].astype("string").dropna().unique().tolist()
+    if source_ids != [expected_id]:
+        raise CanonicalGameError(
+            f"Source SEASON_ID values {source_ids} are inconsistent with "
+            f"{season_type} {season_key}"
+        )
 
 
 def _home_abbreviation(matchup: object) -> str:

@@ -35,6 +35,8 @@ def build_game_features(games: pd.DataFrame) -> pd.DataFrame:
             "game_id",
             "game_date",
             "season_id",
+            "season_type",
+            "season_key",
             "home_team_id",
             "away_team_id",
             "home_win",

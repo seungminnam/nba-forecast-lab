@@ -39,6 +39,8 @@ class MatchupPredictionOutput:
                 "game_id": self.matchup.game_id,
                 "game_date": pd.Timestamp(self.matchup.game_date).date().isoformat(),
                 "season_id": self.matchup.season_id,
+                "season_type": self.matchup.season_type,
+                "season_key": self.matchup.season_key,
                 "home_team_id": self.matchup.home_team_id,
                 "away_team_id": self.matchup.away_team_id,
                 "home_team_abbreviation": self.matchup.home_team_abbreviation,

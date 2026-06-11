@@ -16,7 +16,11 @@ def test_build_game_features_creates_one_model_row_per_game() -> None:
         FIXTURE_PATH,
         dtype={"GAME_ID": "string", "SEASON_ID": "string"},
     )
-    games = team_rows_to_games(team_rows)
+    games = team_rows_to_games(
+        team_rows,
+        season_type="Regular Season",
+        season_key="2025-26",
+    )
 
     features = build_game_features(games)
 
@@ -28,4 +32,5 @@ def test_build_game_features_creates_one_model_row_per_game() -> None:
     assert "away_is_back_to_back" in MODEL_FEATURE_COLUMNS
     assert "home_win" not in MODEL_FEATURE_COLUMNS
     assert set(MODEL_FEATURE_COLUMNS).issubset(features.columns)
-
+    assert features["season_type"].eq("Regular Season").all()
+    assert features["season_key"].eq("2025-26").all()
