@@ -19,6 +19,10 @@ before that game's tip-off.
 - Elo rows expose both teams' ratings and probability before the current
   result updates either rating.
 - Home-minus-away model rows join only pre-game team state and pre-game Elo.
+- Scheduled-matchup snapshots include only completed games with
+  `game_date < as_of_date`.
+- Scheduled inference reuses the historical feature builders through an
+  ephemeral row that is never persisted as a completed canonical game.
 
 ## Mutation-Based Regression Test
 
@@ -30,3 +34,16 @@ state, and verifies:
 3. Later feature rows reflect the changed history.
 
 This test protects the point-in-time contract as feature logic evolves.
+
+## Scheduled-Matchup Regression Tests
+
+The scheduled snapshot test suite verifies:
+
+1. A reconstructed scheduled row matches the authoritative model features from
+   that same game's historical pre-game row.
+2. Changing outcomes and scores on or after `as_of_date` cannot change the
+   scheduled feature row.
+3. An `as_of_date` after the scheduled game date is rejected.
+
+The strict date cutoff is conservative because exact tip-off and completion
+timestamps are not yet present in the canonical contract.

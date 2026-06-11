@@ -139,6 +139,37 @@ The complete versioned model bundle is generated programmatically with
 `ModelBundle`, `ModelBundleMetadata`, and `save_model_bundle`. Generated
 artifacts remain excluded from Git.
 
+## Predict One Scheduled Matchup
+
+```bash
+nba-forecast predict-matchup \
+  --games-parquet data/processed/games.parquet \
+  --model-bundle artifacts/models/2026-06-11-recent5-raw.joblib \
+  --game-id scheduled-example \
+  --game-date 2026-06-12 \
+  --as-of-date 2026-06-11 \
+  --season-id 22025 \
+  --home-team-id 1610612752 \
+  --away-team-id 1610612759 \
+  --home-team-abbreviation NYK \
+  --away-team-abbreviation SAS \
+  --output-dir .
+```
+
+The command writes `artifacts/predictions/matchup_prediction.json`, including
+the UTC prediction timestamp, model and feature versions, cutoff, matchup
+identity, home and away probabilities, nullable final outcome, and the exact
+19 feature values used.
+
+Only completed games with `game_date < as_of_date` are included. Because the
+current canonical contract has dates rather than timestamps, same-day games
+are conservatively excluded.
+
+The current local `data/processed/games.parquet` ends on April 12, 2026 and
+contains regular-season games only. The example command verifies the workflow;
+refresh the processed history with 2025-26 playoff games before describing an
+output as a current Finals prediction.
+
 ## Run a Seeded Series Simulation
 
 Run a model-independent engine check with a synthetic probability provider:

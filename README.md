@@ -45,6 +45,7 @@ immutable raw cache -> canonical games -> validation -> Parquet + DuckDB
   canonical 2025-26 regular-season games
 - Shifted rolling team state and sequential pre-game Elo
 - Explicit season holdouts and comparable probability baseline metrics
+- Auditable `as_of_date` scheduled-matchup prediction workflow
 - Interactive assumption-based Streamlit Simulator Lab
 
 ## Measured Baseline Result
@@ -112,9 +113,10 @@ whichever team is home produced a `53.87%` series win probability for the
 home-court owner and an expected length of `5.8408` games. This is a simulator
 verification example, not an NBA team prediction.
 
-The frozen model currently evaluates prepared feature rows. Connecting
-scheduled matchup features and the model bundle to the simulator is part of
-the next application workflow.
+The frozen model now scores one scheduled matchup from an explicit
+`as_of_date` snapshot and records a UTC prediction timestamp, model and feature
+versions, and the exact feature values used. Connecting stored matchup
+predictions to the series simulator remains a later application workflow.
 
 ## Simulator Lab UI
 
@@ -203,7 +205,24 @@ nba-forecast simulate-series \
   --simulations 10000 \
   --seed 2026 \
   --output-dir .
+
+nba-forecast predict-matchup \
+  --games-parquet data/processed/games.parquet \
+  --model-bundle artifacts/models/2026-06-11-recent5-raw.joblib \
+  --game-id scheduled-example \
+  --game-date 2026-06-12 \
+  --as-of-date 2026-06-11 \
+  --season-id 22025 \
+  --home-team-id 1610612752 \
+  --away-team-id 1610612759 \
+  --home-team-abbreviation NYK \
+  --away-team-abbreviation SAS \
+  --output-dir .
 ```
+
+The current local processed artifact ends on **April 12, 2026** and contains
+regular-season games only. It must be refreshed with 2025-26 playoff games
+before any output is described as a current Finals prediction.
 
 ## Documentation
 
@@ -217,6 +236,7 @@ nba-forecast simulate-series \
 - [Experiment history and model-selection evidence](docs/experiments.md)
 - [Selected probability model card](docs/model_card.md)
 - [Series simulation contract](docs/decisions/0002-series-simulation-contract.md)
+- [As-of matchup prediction contract](docs/decisions/0003-as-of-matchup-prediction-contract.md)
 - [Simulator Lab UI design](docs/superpowers/specs/2026-06-11-simulator-lab-ui-design.md)
 
 ## Attribution and Limitations

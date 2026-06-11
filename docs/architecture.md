@@ -98,10 +98,30 @@ Each sampled series follows home order `A, A, B, B, A, B, A`, where Team A
 owns home-court advantage, and stops immediately when either team reaches four
 wins. The default displayed result uses 10,000 simulations.
 
-The current frozen model bundle evaluates prepared feature rows. Building
-future scheduled-game feature rows and connecting them to the simulation
-provider remains application-integration work; the simulator must not invent
-missing team state.
+The current frozen model bundle evaluates historical or scheduled matchup
+feature rows. Connecting stored matchup predictions to the simulation provider
+remains application-integration work; the simulator must not invent missing
+team state.
+
+## As-of Matchup Prediction Flow
+
+```text
+canonical completed games + ScheduledMatchup + as_of_date
+        |
+        v
+strict game_date < as_of_date history snapshot
+        |
+        v
+ephemeral scheduled row -> shared historical feature builders
+        |
+        v
+frozen ModelBundle -> auditable matchup prediction JSON
+```
+
+`features/matchup_features.py` owns the scheduled feature snapshot.
+`application/matchup_prediction.py` owns bundle scoring and report assembly.
+The ephemeral scheduled row exists only during feature computation and is
+never persisted as a canonical completed game.
 
 ## Simulator Lab Application Boundary
 
@@ -122,5 +142,5 @@ SimulatorLabInput -> run_simulator_lab
 ```
 
 Neither CLI nor Streamlit trains a model during a request. The current UI is
-an assumption-based simulator lab; model-backed scheduled matchup prediction
-requires a future-game feature contract that does not yet exist.
+an assumption-based simulator lab; the model-backed matchup workflow currently
+exists through the CLI and is not yet connected to the UI or simulator.

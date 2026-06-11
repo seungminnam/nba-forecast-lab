@@ -44,14 +44,15 @@ observed win rate across ten probability bins.
 ## Intended Use
 
 - Historical pre-game probability replay
-- Upcoming game probability estimates after the feature pipeline is extended
-  to scheduled games
+- Upcoming game probability estimates from explicit `as_of_date` snapshots
 - Input probabilities for best-of-seven playoff simulation
 - Educational analysis of leakage-safe sports forecasting
 
 ## Limitations
 
 - Uses regular-season team-level history only
+- The current local processed history ends on April 12, 2026 and must include
+  current playoff games before producing a current Finals estimate
 - Does not currently include injuries, player availability, travel, roster
   continuity, head-to-head matchup history, or playoff-specific effects
 - Current rolling features contain correlated summaries of team strength
