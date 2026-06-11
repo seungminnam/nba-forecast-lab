@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -139,3 +140,33 @@ def test_fetch_history_command_reuses_existing_season_caches(
     )
 
     assert exit_code == 0
+
+
+def test_simulate_series_command_writes_json_report(tmp_path: Path) -> None:
+    exit_code = main(
+        [
+            "simulate-series",
+            "--team-a",
+            "Knicks",
+            "--team-b",
+            "Spurs",
+            "--team-a-home-probability",
+            "0.62",
+            "--team-a-away-probability",
+            "0.47",
+            "--simulations",
+            "1000",
+            "--seed",
+            "2026",
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+
+    report_path = tmp_path / "artifacts" / "reports" / "series_simulation.json"
+    report = json.loads(report_path.read_text())
+
+    assert exit_code == 0
+    assert report["inputs"]["team_a"] == "Knicks"
+    assert report["inputs"]["team_b"] == "Spurs"
+    assert report["result"]["simulations"] == 1000

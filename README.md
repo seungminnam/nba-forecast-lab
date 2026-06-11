@@ -45,6 +45,7 @@ immutable raw cache -> canonical games -> validation -> Parquet + DuckDB
   canonical 2025-26 regular-season games
 - Shifted rolling team state and sequential pre-game Elo
 - Explicit season holdouts and comparable probability baseline metrics
+- Interactive assumption-based Streamlit Simulator Lab
 
 ## Measured Baseline Result
 
@@ -115,6 +116,25 @@ The frozen model currently evaluates prepared feature rows. Connecting
 scheduled matchup features and the model bundle to the simulator is part of
 the next application workflow.
 
+## Simulator Lab UI
+
+The first interactive product surface is available locally:
+
+```bash
+source .venv/bin/activate
+streamlit run streamlit_app.py
+```
+
+The single-page Simulator Lab lets users edit team names, Team A's home and
+away win-probability assumptions, simulation count, and random seed. It shows
+series-win cards plus winner-in-N and series-length charts.
+
+The page is explicitly labeled as an assumption-based demo. It does not yet
+claim that the entered probabilities come from the frozen NBA model.
+
+The CLI and UI share the same application workflow, so identical assumptions
+and seeds produce identical simulation results.
+
 ## Development Setup
 
 Python 3.9 or newer is required.
@@ -174,6 +194,15 @@ nba-forecast evaluate-baselines \
   --train-seasons 22015 22016 22017 22018 22019 22020 22021 22022 22023 22024 \
   --test-season 22025 \
   --output-dir .
+
+nba-forecast simulate-series \
+  --team-a Knicks \
+  --team-b Spurs \
+  --team-a-home-probability 0.62 \
+  --team-a-away-probability 0.47 \
+  --simulations 10000 \
+  --seed 2026 \
+  --output-dir .
 ```
 
 ## Documentation
@@ -188,6 +217,7 @@ nba-forecast evaluate-baselines \
 - [Experiment history and model-selection evidence](docs/experiments.md)
 - [Selected probability model card](docs/model_card.md)
 - [Series simulation contract](docs/decisions/0002-series-simulation-contract.md)
+- [Simulator Lab UI design](docs/superpowers/specs/2026-06-11-simulator-lab-ui-design.md)
 
 ## Attribution and Limitations
 

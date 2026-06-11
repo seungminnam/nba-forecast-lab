@@ -166,12 +166,12 @@ git commit -m "feat: add best of seven playoff simulator"
 - Modify: `docs/experiments.md`
 - Modify: `docs/superpowers/plans/2026-06-10-phase-3-model-calibration-simulation.md`
 
-- [ ] **Step 1: Write failing CLI tests**
+- [x] **Step 1: Write failing CLI tests**
 
 Test commands that run a documented model experiment and a seeded series
 simulation against prepared fixture artifacts.
 
-- [ ] **Step 2: Implement experiment and simulation commands**
+- [x] **Step 2: Implement experiment and simulation commands**
 
 Commands write machine-readable reports and never train during an application
 request path.
@@ -181,7 +181,7 @@ request path.
 Run the documented history, feature, evaluation, selection, calibration, and
 simulation commands.
 
-- [ ] **Step 4: Run complete verification and documentation audit**
+- [x] **Step 4: Run complete verification and documentation audit**
 
 ```bash
 ruff check .
