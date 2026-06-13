@@ -86,6 +86,64 @@ def test_model_backed_replay_uses_observed_score_and_two_frozen_probabilities() 
     )
 
 
+def test_next_game_forecast_selects_team_b_home_direction_before_game_four() -> None:
+    output = run_series_replay(
+        _games(),
+        _replay_inputs(as_of_date="2026-06-10"),
+        _bundle(),
+    )
+
+    assert output.next_game_forecast is not None
+    assert output.team_b_home_prediction is not None
+    assert output.next_game_forecast.game_number == 4
+    assert output.next_game_forecast.home_team_abbreviation == "BET"
+    assert output.next_game_forecast.away_team_abbreviation == "ALP"
+    assert output.next_game_forecast.home_win_probability == (
+        output.team_b_home_prediction.home_win_probability
+    )
+    assert output.next_game_forecast.away_win_probability == (
+        output.team_b_home_prediction.away_win_probability
+    )
+
+
+def test_next_game_forecast_selects_team_a_home_direction_before_game_five() -> None:
+    output = run_series_replay(
+        _games(),
+        _replay_inputs(as_of_date="2026-06-11"),
+        _bundle(),
+    )
+
+    assert output.next_game_forecast is not None
+    assert output.team_a_home_prediction is not None
+    assert output.next_game_forecast.game_number == 5
+    assert output.next_game_forecast.home_team_abbreviation == "ALP"
+    assert output.next_game_forecast.away_team_abbreviation == "BET"
+    assert output.next_game_forecast.home_win_probability == (
+        output.team_a_home_prediction.home_win_probability
+    )
+    assert output.next_game_forecast.away_win_probability == (
+        output.team_a_home_prediction.away_win_probability
+    )
+
+
+def test_next_game_forecast_report_is_explicitly_non_market_and_non_betting() -> None:
+    output = run_series_replay(
+        _games(),
+        _replay_inputs(as_of_date="2026-06-11"),
+        _bundle(),
+    )
+
+    report = output.to_report()
+    next_game = report["next_game_forecast"]
+
+    assert next_game["game_number"] == 5
+    assert next_game["home_fair_odds"]["decimal"] > 1.0
+    assert next_game["away_fair_odds"]["decimal"] > 1.0
+    assert next_game["market_odds"] is False
+    assert next_game["includes_bookmaker_margin"] is False
+    assert next_game["betting_recommendation"] is False
+
+
 def test_model_backed_replay_ignores_games_on_and_after_cutoff() -> None:
     inputs = _replay_inputs(as_of_date="2026-06-10")
     games = _games()
@@ -137,8 +195,10 @@ def test_completed_series_reports_observed_winner_without_simulation() -> None:
     assert output.state.winner_team_id == 2
     assert output.team_a_home_prediction is None
     assert output.team_b_home_prediction is None
+    assert output.next_game_forecast is None
     assert output.result is None
     assert output.to_report()["probabilities"] is None
+    assert output.to_report()["next_game_forecast"] is None
 
 
 def _replay_inputs(

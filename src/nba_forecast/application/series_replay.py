@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 import pandas as pd
 
+from nba_forecast.application.fair_odds import FairOdds, fair_odds_from_probability
 from nba_forecast.application.matchup_prediction import (
     MatchupPredictionOutput,
     predict_scheduled_matchup,
@@ -52,6 +53,40 @@ class ObservedSeriesState:
 
 
 @dataclass(frozen=True)
+class NextGameForecast:
+    """Actual next-game probability and model-implied fair-odds display."""
+
+    game_number: int
+    game_date: pd.Timestamp
+    home_team_id: int
+    home_team_abbreviation: str
+    away_team_id: int
+    away_team_abbreviation: str
+    home_win_probability: float
+    away_win_probability: float
+    home_fair_odds: FairOdds
+    away_fair_odds: FairOdds
+
+    def to_report(self) -> dict[str, object]:
+        """Return a JSON-serializable next-game forecast."""
+        return {
+            "game_number": self.game_number,
+            "game_date": pd.Timestamp(self.game_date).date().isoformat(),
+            "home_team_id": self.home_team_id,
+            "home_team_abbreviation": self.home_team_abbreviation,
+            "away_team_id": self.away_team_id,
+            "away_team_abbreviation": self.away_team_abbreviation,
+            "home_win_probability": self.home_win_probability,
+            "away_win_probability": self.away_win_probability,
+            "home_fair_odds": asdict(self.home_fair_odds),
+            "away_fair_odds": asdict(self.away_fair_odds),
+            "market_odds": False,
+            "includes_bookmaker_margin": False,
+            "betting_recommendation": False,
+        }
+
+
+@dataclass(frozen=True)
 class SeriesReplayOutput:
     """Auditable model-backed replay result and chart-ready tables."""
 
@@ -60,6 +95,7 @@ class SeriesReplayOutput:
     replay_timestamp: datetime
     team_a_home_prediction: Optional[MatchupPredictionOutput]
     team_b_home_prediction: Optional[MatchupPredictionOutput]
+    next_game_forecast: Optional[NextGameForecast]
     result: Optional[SeriesSimulationResult]
     outcome_table: pd.DataFrame
     length_table: pd.DataFrame
@@ -103,6 +139,11 @@ class SeriesReplayOutput:
                 "winner_team_id": self.state.winner_team_id,
                 "games": observed_games,
             },
+            "next_game_forecast": (
+                self.next_game_forecast.to_report()
+                if self.next_game_forecast is not None
+                else None
+            ),
             "probabilities": probabilities,
             "result": asdict(self.result) if self.result is not None else None,
             "assumptions": {
@@ -207,6 +248,7 @@ def run_series_replay(
             replay_timestamp=timestamp,
             team_a_home_prediction=None,
             team_b_home_prediction=None,
+            next_game_forecast=None,
             result=None,
             outcome_table=pd.DataFrame(
                 columns=["team", "games", "probability", "label"]
@@ -227,6 +269,12 @@ def run_series_replay(
         as_of_date=inputs.as_of_date,
         bundle=bundle,
         prediction_timestamp=timestamp,
+    )
+    next_game_forecast = _next_game_forecast(
+        inputs,
+        state,
+        team_a_home_prediction,
+        team_b_home_prediction,
     )
 
     def home_win_probability(context: SeriesGameContext) -> float:
@@ -249,6 +297,7 @@ def run_series_replay(
         replay_timestamp=timestamp,
         team_a_home_prediction=team_a_home_prediction,
         team_b_home_prediction=team_b_home_prediction,
+        next_game_forecast=next_game_forecast,
         result=result,
         outcome_table=_outcome_table(result),
         length_table=pd.DataFrame(
@@ -257,6 +306,33 @@ def run_series_replay(
                 "probability": list(result.length_probabilities.values()),
             }
         ),
+    )
+
+
+def _next_game_forecast(
+    inputs: SeriesReplayInput,
+    state: ObservedSeriesState,
+    team_a_home_prediction: MatchupPredictionOutput,
+    team_b_home_prediction: MatchupPredictionOutput,
+) -> NextGameForecast:
+    if state.next_game_number is None or state.next_home_team_id is None:
+        raise ValueError("active series must have a next game")
+    prediction = (
+        team_a_home_prediction
+        if state.next_home_team_id == inputs.team_a_id
+        else team_b_home_prediction
+    )
+    return NextGameForecast(
+        game_number=state.next_game_number,
+        game_date=pd.Timestamp(inputs.next_game_date),
+        home_team_id=prediction.matchup.home_team_id,
+        home_team_abbreviation=prediction.matchup.home_team_abbreviation,
+        away_team_id=prediction.matchup.away_team_id,
+        away_team_abbreviation=prediction.matchup.away_team_abbreviation,
+        home_win_probability=prediction.home_win_probability,
+        away_win_probability=prediction.away_win_probability,
+        home_fair_odds=fair_odds_from_probability(prediction.home_win_probability),
+        away_fair_odds=fair_odds_from_probability(prediction.away_win_probability),
     )
 
 

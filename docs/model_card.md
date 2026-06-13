@@ -47,6 +47,7 @@ observed win rate across ten probability bins.
 - Upcoming game probability estimates from explicit `as_of_date` snapshots
 - Input probabilities for best-of-seven playoff simulation
 - Historical playoff-series replay from an explicit cutoff and observed score
+- Model-implied no-margin fair-odds display for probability communication
 - Educational analysis of leakage-safe sports forecasting
 
 ## Limitations
@@ -64,6 +65,9 @@ observed win rate across ten probability bins.
 - Historical Replay freezes two venue probabilities at the cutoff and does
   not model future box-score-driven feature changes, injuries, momentum, or
   elimination-game psychology
+- Model-implied fair odds are only a deterministic transform of model
+  probabilities; they are not sportsbook prices, market observations, or
+  evidence of betting profitability
 - Canonical data currently lacks a stable source `series_id`; replay identifies
   a series from season, playoff type, and the selected team pair
 - Does not currently include injuries, player availability, travel, roster

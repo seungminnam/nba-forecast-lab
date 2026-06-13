@@ -145,6 +145,14 @@ assumption flags.
 The observed score is derived from canonical playoff games strictly before the
 cutoff. It is never a user-entered Historical Replay field.
 
+`next_game_forecast` is nullable for completed series. For an active series it
+stores the reconstructed next game number and venue, both teams' win
+probabilities, and their model-implied fair decimal and American odds.
+
+Fair odds are calculated from each probability without bookmaker margin. The
+report explicitly stores `market_odds=false`,
+`includes_bookmaker_margin=false`, and `betting_recommendation=false`.
+
 ## Series Simulation Contract
 
 `team_a` is the home-court owner and `team_b` is the opponent.

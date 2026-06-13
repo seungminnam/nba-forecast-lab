@@ -119,6 +119,10 @@ def _render_charts(
         st.altair_chart(length_chart, use_container_width=True)
 
 
+def _format_american_odds(odds: int) -> str:
+    return f"+{odds}" if odds > 0 else str(odds)
+
+
 with replay_tab:
     st.markdown(
         """
@@ -239,22 +243,43 @@ with replay_tab:
                     st.info("The selected series was already complete at this cutoff.")
                 elif (
                     replay_output.result is not None
-                    and replay_output.team_a_home_prediction is not None
-                    and replay_output.team_b_home_prediction is not None
+                    and replay_output.next_game_forecast is not None
                 ):
+                    next_game = replay_output.next_game_forecast
+                    st.subheader(
+                        f"Next Game Forecast · Game {next_game.game_number}"
+                    )
                     st.caption(
-                        f"Next game: Game {state.next_game_number} · "
-                        f"home team ID {state.next_home_team_id}"
+                        f"{pd.Timestamp(next_game.game_date).date().isoformat()} · "
+                        f"{next_game.home_team_abbreviation} home"
                     )
-                    probability_metrics = st.columns(2)
-                    probability_metrics[0].metric(
-                        f"{team_a_abbreviation} home win probability",
-                        f"{replay_output.team_a_home_prediction.home_win_probability:.1%}",
+                    next_game_columns = st.columns(2)
+                    next_game_columns[0].metric(
+                        f"{next_game.home_team_abbreviation} next-game win",
+                        f"{next_game.home_win_probability:.1%}",
                     )
-                    probability_metrics[1].metric(
-                        f"{team_b_abbreviation} home win probability",
-                        f"{replay_output.team_b_home_prediction.home_win_probability:.1%}",
+                    next_game_columns[0].caption(
+                        "Model-implied fair odds: "
+                        f"Decimal {next_game.home_fair_odds.decimal:.2f} · "
+                        "American "
+                        f"{_format_american_odds(next_game.home_fair_odds.american)}"
                     )
+                    next_game_columns[1].metric(
+                        f"{next_game.away_team_abbreviation} next-game win",
+                        f"{next_game.away_win_probability:.1%}",
+                    )
+                    next_game_columns[1].caption(
+                        "Model-implied fair odds: "
+                        f"Decimal {next_game.away_fair_odds.decimal:.2f} · "
+                        "American "
+                        f"{_format_american_odds(next_game.away_fair_odds.american)}"
+                    )
+                    st.info(
+                        "Model-implied fair odds are a no-margin transformation "
+                        "of the displayed probabilities, not sportsbook prices or "
+                        "betting advice."
+                    )
+                    st.subheader("Remaining Series Forecast")
                     replay_metrics = st.columns(3)
                     replay_metrics[0].metric(
                         f"{team_a_abbreviation} series win",
