@@ -192,6 +192,41 @@ example command produced a `54.57%` SAS home-win probability for Finals Game
 5. This is a timestamped workflow smoke prediction, not measured playoff
 accuracy.
 
+## Replay a Playoff Series at a Historical Cutoff
+
+Replay the 2026 Finals immediately before Game 4:
+
+```bash
+nba-forecast replay-series \
+  --games-parquet data/processed/games.parquet \
+  --model-bundle artifacts/models/2026-06-11-recent5-raw.joblib \
+  --as-of-date 2026-06-10 \
+  --next-game-date 2026-06-10 \
+  --season-id 42025 \
+  --season-type Playoffs \
+  --season-key 2025-26 \
+  --team-a-id 1610612759 \
+  --team-a-abbreviation SAS \
+  --team-b-id 1610612752 \
+  --team-b-abbreviation NYK \
+  --simulations 10000 \
+  --seed 2026 \
+  --output-dir .
+```
+
+The command writes
+`artifacts/reports/model_backed_series_replay.json`. The verified seeded
+pre-Game-4 replay reconstructed `SAS 1-2 NYK` from Games 1-3 and estimated
+remaining-series win probabilities of `31.13%` SAS and `68.87%` NYK.
+
+Changing Game 4 or later results cannot change this replay. The application
+uses only games strictly before the cutoff, scores both venue directions once,
+and freezes those probabilities during the remaining-series simulation.
+
+Historical Replay does not model future box-score-driven team-state changes,
+injuries, momentum, or elimination-game psychology. Use the Assumption Lab
+for explicitly hypothetical probability inputs.
+
 ## Run a Seeded Series Simulation
 
 Run a model-independent engine check with a synthetic probability provider:

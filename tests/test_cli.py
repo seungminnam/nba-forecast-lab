@@ -316,6 +316,83 @@ def test_predict_matchup_command_writes_auditable_json_report(tmp_path: Path) ->
     assert set(report["features"]) == set(MODEL_FEATURE_COLUMNS)
 
 
+def test_replay_series_command_writes_model_backed_json_report(tmp_path: Path) -> None:
+    rows = pd.read_csv(
+        FIXTURE_PATH,
+        dtype={"GAME_ID": "string", "SEASON_ID": "string"},
+    )
+    playoff_rows = rows.loc[rows["GAME_ID"] == "0022500001"].assign(
+        SEASON_ID="42025"
+    )
+    playoff_path = _write_contextual_raw_csv(
+        playoff_rows,
+        tmp_path / "playoffs.csv",
+        season="2025-26",
+        season_type="Playoffs",
+    )
+    assert (
+        main(
+            [
+                "build-games",
+                "--raw-csv",
+                str(playoff_path),
+                "--output-dir",
+                str(tmp_path),
+            ]
+        )
+        == 0
+    )
+    bundle_path = tmp_path / "model.joblib"
+    _write_test_bundle(bundle_path)
+
+    exit_code = main(
+        [
+            "replay-series",
+            "--games-parquet",
+            str(tmp_path / "processed" / "games.parquet"),
+            "--model-bundle",
+            str(bundle_path),
+            "--as-of-date",
+            "2025-10-22",
+            "--next-game-date",
+            "2025-10-24",
+            "--season-id",
+            "42025",
+            "--season-type",
+            "Playoffs",
+            "--season-key",
+            "2025-26",
+            "--team-a-id",
+            "1",
+            "--team-a-abbreviation",
+            "HOM",
+            "--team-b-id",
+            "2",
+            "--team-b-abbreviation",
+            "AWY",
+            "--simulations",
+            "100",
+            "--seed",
+            "7",
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+
+    report_path = (
+        tmp_path / "artifacts" / "reports" / "model_backed_series_replay.json"
+    )
+    report = json.loads(report_path.read_text())
+
+    assert exit_code == 0
+    assert report["observed_state"]["team_a_wins"] == 1
+    assert report["observed_state"]["team_b_wins"] == 0
+    assert report["observed_state"]["next_game_number"] == 2
+    assert report["probabilities"]["team_a_home"] is not None
+    assert report["probabilities"]["team_b_home"] is not None
+    assert report["result"]["simulations"] == 100
+
+
 def _write_test_bundle(path: Path) -> None:
     rows = 20
     frame = pd.DataFrame(

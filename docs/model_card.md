@@ -46,6 +46,7 @@ observed win rate across ten probability bins.
 - Historical pre-game probability replay
 - Upcoming game probability estimates from explicit `as_of_date` snapshots
 - Input probabilities for best-of-seven playoff simulation
+- Historical playoff-series replay from an explicit cutoff and observed score
 - Educational analysis of leakage-safe sports forecasting
 
 ## Limitations
@@ -60,6 +61,11 @@ observed win rate across ten probability bins.
   completed 2025-26 playoff games
 - The current refresh does not include Play-In tournament games, so a
   Play-In qualifier's first-round state would omit those completed games
+- Historical Replay freezes two venue probabilities at the cutoff and does
+  not model future box-score-driven feature changes, injuries, momentum, or
+  elimination-game psychology
+- Canonical data currently lacks a stable source `series_id`; replay identifies
+  a series from season, playoff type, and the selected team pair
 - Does not currently include injuries, player availability, travel, roster
   continuity, head-to-head matchup history, or playoff-specific effects
 - Current rolling features contain correlated summaries of team strength

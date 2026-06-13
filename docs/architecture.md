@@ -108,9 +108,9 @@ owns home-court advantage, and stops immediately when either team reaches four
 wins. The default displayed result uses 10,000 simulations.
 
 The current frozen model bundle evaluates historical or scheduled matchup
-feature rows. Connecting stored matchup predictions to the simulation provider
-remains application-integration work; the simulator must not invent missing
-team state.
+feature rows. Historical Replay scores both venue directions once at the
+declared cutoff and supplies those frozen probabilities to the simulator. The
+simulator does not invent missing future team state.
 
 ## As-of Matchup Prediction Flow
 
@@ -150,6 +150,26 @@ SimulatorLabInput -> run_simulator_lab
         +--> Streamlit metrics and charts
 ```
 
-Neither CLI nor Streamlit trains a model during a request. The current UI is
-an assumption-based simulator lab; the model-backed matchup workflow currently
-exists through the CLI and is not yet connected to the UI or simulator.
+Neither CLI nor Streamlit trains a model during a request. The UI separates
+model-backed Historical Replay from the hypothetical Assumption Lab.
+
+## Model-Backed Series Replay Flow
+
+```text
+canonical playoff games + as_of_date + team pair
+        |
+        v
+reconstruct observed score and next schedule position
+        |
+        v
+score Team A home and Team B home snapshots once
+        |
+        v
+simulate remaining games from observed score
+        |
+        v
+auditable JSON report and Streamlit charts
+```
+
+`application/series_replay.py` owns reconstruction, two-direction scoring, and
+report assembly. `simulation/series.py` remains model-independent.

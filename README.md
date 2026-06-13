@@ -53,7 +53,8 @@ season into the playoffs.
 - Shifted rolling team state and sequential pre-game Elo
 - Explicit season holdouts and comparable probability baseline metrics
 - Auditable `as_of_date` scheduled-matchup prediction workflow
-- Interactive assumption-based Streamlit Simulator Lab
+- Model-backed playoff-series Historical Replay at arbitrary cutoffs
+- Interactive Historical Replay and assumption-based Simulator Lab
 
 ## Measured Baseline Result
 
@@ -120,10 +121,20 @@ whichever team is home produced a `53.87%` series win probability for the
 home-court owner and an expected length of `5.8408` games. This is a simulator
 verification example, not an NBA team prediction.
 
-The frozen model now scores one scheduled matchup from an explicit
-`as_of_date` snapshot and records a UTC prediction timestamp, model and feature
-versions, and the exact feature values used. Connecting stored matchup
-predictions to the series simulator remains a later application workflow.
+The frozen model now powers Historical Replay. It reconstructs the observed
+playoff-series score strictly before an `as_of_date`, computes two frozen
+venue-direction probabilities, and simulates only the remaining games.
+
+Verified 2026 Finals replays:
+
+| Cutoff | Observed score | SAS series win | NYK series win |
+|---|---|---:|---:|
+| Before Game 4, June 10 | SAS 1-2 NYK | 31.13% | 68.87% |
+| Before Game 5, June 11 | SAS 1-3 NYK | 13.79% | 86.21% |
+
+These seeded workflow results are not measured playoff predictive accuracy.
+Venue probabilities remain frozen during simulation because sampled wins do
+not provide future box scores needed to update rolling features.
 
 ## Simulator Lab UI
 
@@ -134,15 +145,15 @@ source .venv/bin/activate
 streamlit run streamlit_app.py
 ```
 
-The single-page Simulator Lab lets users edit team names, Team A's home and
-away win-probability assumptions, simulation count, and random seed. It shows
-series-win cards plus winner-in-N and series-length charts.
+The app provides two modes:
 
-The page is explicitly labeled as an assumption-based demo. It does not yet
-claim that the entered probabilities come from the frozen NBA model.
+- **Model-Backed Historical Replay:** reconstructs an observed playoff series
+  at a declared cutoff and simulates the remaining games.
+- **Assumption Lab:** lets users edit hypothetical probabilities, simulation
+  count, and random seed.
 
-The CLI and UI share the same application workflow, so identical assumptions
-and seeds produce identical simulation results.
+The two modes are clearly separated so manually entered assumptions are never
+presented as observed historical evidence.
 
 ## Development Setup
 
@@ -234,6 +245,22 @@ nba-forecast predict-matchup \
   --home-team-abbreviation SAS \
   --away-team-abbreviation NYK \
   --output-dir .
+
+nba-forecast replay-series \
+  --games-parquet data/processed/games.parquet \
+  --model-bundle artifacts/models/2026-06-11-recent5-raw.joblib \
+  --as-of-date 2026-06-10 \
+  --next-game-date 2026-06-10 \
+  --season-id 42025 \
+  --season-type Playoffs \
+  --season-key 2025-26 \
+  --team-a-id 1610612759 \
+  --team-a-abbreviation SAS \
+  --team-b-id 1610612752 \
+  --team-b-abbreviation NYK \
+  --simulations 10000 \
+  --seed 2026 \
+  --output-dir .
 ```
 
 The verified local refresh now ends on **June 10, 2026** and includes 84
@@ -257,6 +284,7 @@ model remains trained and evaluated on regular-season games only.
 - [As-of matchup prediction contract](docs/decisions/0003-as-of-matchup-prediction-contract.md)
 - [Simulator Lab UI design](docs/superpowers/specs/2026-06-11-simulator-lab-ui-design.md)
 - [Playoff data continuity design](docs/superpowers/specs/2026-06-11-playoff-data-continuity-design.md)
+- [Model-backed series replay design](docs/superpowers/specs/2026-06-11-model-backed-series-replay-design.md)
 
 ## Attribution and Limitations
 

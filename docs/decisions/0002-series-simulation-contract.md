@@ -18,6 +18,8 @@ simulation engine to a specific model implementation.
 - Accept a probability-provider callable that receives the current game
   number, home team, away team, and pre-game series score, then returns the
   home team's win probability.
+- Accept an active observed series score and simulate only remaining schedule
+  positions.
 - Stop each sampled series immediately when either team reaches four wins.
 - Use 10,000 simulations by default and support a supplied random seed.
 - Report:
@@ -36,6 +38,9 @@ probabilities from prepared model features and the frozen model bundle.
   supplied for each game context.
 - The engine itself does not update team features, injuries, rotations, or
   fatigue after a sampled game.
+- Historical Replay freezes two model-derived venue probabilities at the
+  declared cutoff. Observed score is conditioned on, but psychological or
+  elimination-game adjustments are not applied without measured evidence.
 - A context-aware provider may vary probability by venue, game number, or
   current series score, but those adjustments require evidence outside the
   simulator.

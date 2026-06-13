@@ -51,6 +51,18 @@ The scheduled snapshot test suite verifies:
 The strict date cutoff is conservative because exact tip-off and completion
 timestamps are not yet present in the canonical contract.
 
+## Historical Series Replay Controls
+
+- Observed series games are reconstructed only where
+  `game_date < as_of_date`.
+- The observed score is derived from canonical results rather than entered by
+  a user.
+- Both venue-direction predictions use the same cutoff.
+- Mutation tests change Game 4 and later results and prove that a pre-Game-4
+  replay state, probabilities, and simulation output remain unchanged.
+- Future simulated wins do not update rolling features because no future box
+  scores exist.
+
 ## Playoff-Boundary Regression Tests
 
 The feature suite verifies that:
