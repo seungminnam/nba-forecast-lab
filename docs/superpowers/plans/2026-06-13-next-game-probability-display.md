@@ -72,4 +72,4 @@ model inference.
 - [x] Visually verify the pre-Game-5 Historical Replay UI.
 - [x] Run `ruff check .`, `mypy src`, `pytest`, and `git diff --check`.
 - [x] Audit generated artifacts and public claims.
-- [ ] Commit, push, and open a Draft PR.
+- [x] Commit, push, and open a Draft PR.
