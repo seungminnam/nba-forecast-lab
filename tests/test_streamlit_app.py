@@ -51,8 +51,8 @@ def test_streamlit_app_renders_actual_next_game_forecast_and_fair_odds(
             True
             if str(path)
             in {
-                "data/processed/games.parquet",
-                "artifacts/models/2026-06-11-recent5-raw.joblib",
+                "data/snapshots/2026-06-10/games.parquet",
+                "data/snapshots/2026-06-10/2026-06-11-recent5-raw.joblib",
             }
             else original_exists(path)
         ),

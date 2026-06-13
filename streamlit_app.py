@@ -10,8 +10,8 @@ from nba_forecast.application.series_replay import SeriesReplayInput, run_series
 from nba_forecast.application.simulator_lab import SimulatorLabInput, run_simulator_lab
 from nba_forecast.models.artifacts import load_model_bundle
 
-GAMES_PATH = Path("data/processed/games.parquet")
-MODEL_PATH = Path("artifacts/models/2026-06-11-recent5-raw.joblib")
+GAMES_PATH = Path("data/snapshots/2026-06-10/games.parquet")
+MODEL_PATH = Path("data/snapshots/2026-06-10/2026-06-11-recent5-raw.joblib")
 
 st.set_page_config(
     page_title="NBA Forecast Lab",
