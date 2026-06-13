@@ -18,17 +18,18 @@ def test_streamlit_app_renders_simulator_results() -> None:
     assert [tab.label for tab in app.tabs] == [
         "Model-Backed Historical Replay",
         "Assumption Lab",
+        "Model Performance",
+        "Methodology",
     ]
     assert any("NBA FORECAST LAB" in markdown.value for markdown in app.markdown)
     assert any("Assumption-based demo" in markdown.value for markdown in app.markdown)
-    assert len(app.metric) == 3
     assert app.metric[0].label == "Knicks series win"
-    assert [subheader.value for subheader in app.subheader] == [
+    assert {
         "Replay context",
         "Series assumptions",
         "Series outcome distribution",
         "Series length distribution",
-    ]
+    }.issubset({subheader.value for subheader in app.subheader})
 
 
 def test_streamlit_app_shows_distinct_team_validation_error() -> None:
