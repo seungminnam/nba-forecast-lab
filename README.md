@@ -136,6 +136,17 @@ These seeded workflow results are not measured playoff predictive accuracy.
 Venue probabilities remain frozen during simulation because sampled wins do
 not provide future box scores needed to update rolling features.
 
+Historical Replay also selects the actual next game's venue prediction from
+the two frozen directions. Before Game 5, the model estimated:
+
+| Team | Next-game win probability | Model-implied fair decimal | Fair American |
+|---|---:|---:|---:|
+| SAS, home | 54.57% | 1.83 | -120 |
+| NYK, away | 45.43% | 2.20 | +120 |
+
+Fair odds are a no-margin transformation of the displayed model probabilities.
+They are not sportsbook prices, a market-odds feed, or betting advice.
+
 ## Simulator Lab UI
 
 The first interactive product surface is available locally:
@@ -148,7 +159,8 @@ streamlit run streamlit_app.py
 The app provides two modes:
 
 - **Model-Backed Historical Replay:** reconstructs an observed playoff series
-  at a declared cutoff and simulates the remaining games.
+  at a declared cutoff, displays the actual next-game forecast, and simulates
+  the remaining games.
 - **Assumption Lab:** lets users edit hypothetical probabilities, simulation
   count, and random seed.
 

@@ -165,6 +165,11 @@ reconstruct observed score and next schedule position
 score Team A home and Team B home snapshots once
         |
         v
+select actual next-game venue forecast
+        |
+        +--> model-implied fair-odds display
+        |
+        v
 simulate remaining games from observed score
         |
         v
@@ -172,4 +177,9 @@ auditable JSON report and Streamlit charts
 ```
 
 `application/series_replay.py` owns reconstruction, two-direction scoring, and
-report assembly. `simulation/series.py` remains model-independent.
+selection of the actual next-game forecast. `application/fair_odds.py` owns the
+deterministic no-margin probability display transform. `simulation/series.py`
+remains model-independent.
+
+The odds transform does not call a model, improve probability quality, or
+consume market prices.

@@ -23,11 +23,11 @@ model inference.
 - Create: `src/nba_forecast/application/fair_odds.py`
 - Create: `tests/application/test_fair_odds.py`
 
-- [ ] Write failing tests for decimal odds, positive and negative American
+- [x] Write failing tests for decimal odds, positive and negative American
   odds, even probability, and zero/one rejection.
-- [ ] Run the focused test and verify failure because the module is absent.
-- [ ] Implement immutable `FairOdds` and `fair_odds_from_probability`.
-- [ ] Run the focused odds tests.
+- [x] Run the focused test and verify failure because the module is absent.
+- [x] Implement immutable `FairOdds` and `fair_odds_from_probability`.
+- [x] Run the focused odds tests.
 
 ### Task 2: Next-Game Forecast Contract
 
@@ -35,13 +35,13 @@ model inference.
 - Modify: `src/nba_forecast/application/series_replay.py`
 - Modify: `tests/application/test_series_replay.py`
 
-- [ ] Write failing tests proving Team A-home and Team B-home next games select
+- [x] Write failing tests proving Team A-home and Team B-home next games select
   the correct existing prediction.
-- [ ] Add immutable `NextGameForecast` to `SeriesReplayOutput`.
-- [ ] Build fair odds for both teams without a third model inference.
-- [ ] Return no next-game forecast for completed series.
-- [ ] Add explicit non-market and non-betting flags to the JSON report.
-- [ ] Run focused replay tests.
+- [x] Add immutable `NextGameForecast` to `SeriesReplayOutput`.
+- [x] Build fair odds for both teams without a third model inference.
+- [x] Return no next-game forecast for completed series.
+- [x] Add explicit non-market and non-betting flags to the JSON report.
+- [x] Run focused replay tests.
 
 ### Task 3: Streamlit Product Surface
 
@@ -49,13 +49,13 @@ model inference.
 - Modify: `streamlit_app.py`
 - Modify: `tests/test_streamlit_app.py`
 
-- [ ] Write failing AppTest assertions for next-game and fair-odds labels.
-- [ ] Replace generic venue probability cards with an actual next-game
+- [x] Write failing AppTest assertions for next-game and fair-odds labels.
+- [x] Replace generic venue probability cards with an actual next-game
   forecast section.
-- [ ] Display both team probabilities, decimal odds, American odds, and the
+- [x] Display both team probabilities, decimal odds, American odds, and the
   non-betting disclaimer.
-- [ ] Preserve series probability cards and charts.
-- [ ] Run Streamlit AppTest.
+- [x] Preserve series probability cards and charts.
+- [x] Run Streamlit AppTest.
 
 ### Task 4: Documentation and Verification
 
@@ -67,9 +67,9 @@ model inference.
 - Modify: `docs/runbook.md`
 - Modify: `docs/superpowers/plans/2026-06-13-next-game-probability-display.md`
 
-- [ ] Document next-game forecast versus remaining-series forecast.
-- [ ] Document fair-odds formulas and non-market/non-betting boundaries.
-- [ ] Visually verify the pre-Game-5 Historical Replay UI.
-- [ ] Run `ruff check .`, `mypy src`, `pytest`, and `git diff --check`.
-- [ ] Audit generated artifacts and public claims.
+- [x] Document next-game forecast versus remaining-series forecast.
+- [x] Document fair-odds formulas and non-market/non-betting boundaries.
+- [x] Visually verify the pre-Game-5 Historical Replay UI.
+- [x] Run `ruff check .`, `mypy src`, `pytest`, and `git diff --check`.
+- [x] Audit generated artifacts and public claims.
 - [ ] Commit, push, and open a Draft PR.

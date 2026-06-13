@@ -390,6 +390,9 @@ def test_replay_series_command_writes_model_backed_json_report(tmp_path: Path) -
     assert report["observed_state"]["next_game_number"] == 2
     assert report["probabilities"]["team_a_home"] is not None
     assert report["probabilities"]["team_b_home"] is not None
+    assert report["next_game_forecast"]["game_number"] == 2
+    assert report["next_game_forecast"]["market_odds"] is False
+    assert report["next_game_forecast"]["betting_recommendation"] is False
     assert report["result"]["simulations"] == 100
 
 

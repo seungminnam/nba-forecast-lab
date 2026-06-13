@@ -223,6 +223,17 @@ Changing Game 4 or later results cannot change this replay. The application
 uses only games strictly before the cutoff, scores both venue directions once,
 and freezes those probabilities during the remaining-series simulation.
 
+For the June 11 pre-Game-5 replay, the report selected SAS as the actual next
+game's home team and stored:
+
+| Team | Next-game win probability | Fair decimal | Fair American |
+|---|---:|---:|---:|
+| SAS | `54.57%` | `1.83` | `-120` |
+| NYK | `45.43%` | `2.20` | `+120` |
+
+These are model-implied no-margin fair odds, not sportsbook prices or betting
+advice. Inspect the machine-readable values under `next_game_forecast`.
+
 Historical Replay does not model future box-score-driven team-state changes,
 injuries, momentum, or elimination-game psychology. Use the Assumption Lab
 for explicitly hypothetical probability inputs.
