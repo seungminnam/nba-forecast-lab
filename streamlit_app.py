@@ -22,22 +22,22 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .stApp { background: #07111f; color: #f7fafc; }
-    [data-testid="stHeader"] { background: rgba(7, 17, 31, 0.82); }
+    .stApp { background: #0E1117; color: #f7fafc; }
+    [data-testid="stHeader"] { background: rgba(14, 17, 23, 0.82); }
     [data-testid="stMetric"] {
-        background: linear-gradient(145deg, #10233d, #0c192b);
-        border: 1px solid #284463;
+        background: linear-gradient(145deg, #1C2128, #161A1F);
+        border: 1px solid #2A3038;
         border-radius: 16px;
         padding: 18px;
     }
     .hero {
         padding: 24px 28px;
         border-radius: 20px;
-        background: linear-gradient(120deg, #102a4c, #0b1728 65%);
-        border: 1px solid #31577e;
+        background: linear-gradient(120deg, #1C2128, #0E1117 65%);
+        border: 1px solid #2A3038;
         margin-bottom: 18px;
     }
-    .eyebrow { color: #70b7ff; font-weight: 700; letter-spacing: .12em; }
+    .eyebrow { color: #2DD4BF; font-weight: 700; letter-spacing: .12em; }
     .notice {
         background: #261d0c;
         border: 1px solid #75561d;
@@ -76,7 +76,7 @@ def _render_charts(
 ) -> None:
     team_colors = alt.Scale(
         domain=[team_a, team_b],
-        range=["#4ba3ff", "#ff9f43"],
+        range=["#2DD4BF", "#A78BFA"],
     )
     charts = st.columns(2)
     with charts[0]:
@@ -105,7 +105,7 @@ def _render_charts(
         st.subheader("Series length distribution")
         length_chart = (
             alt.Chart(length_table)
-            .mark_bar(color="#70b7ff", cornerRadiusEnd=4)
+            .mark_bar(color="#2DD4BF", cornerRadiusEnd=4)
             .encode(
                 x=alt.X("games:O", title="Games"),
                 y=alt.Y(
