@@ -123,3 +123,61 @@ def test_simulation_rejects_invalid_provider_probability() -> None:
             simulations=1,
             seed=1,
         )
+
+
+def test_simulation_starts_from_observed_score_and_skips_completed_games() -> None:
+    contexts: list[SeriesGameContext] = []
+
+    def team_a_wins_remaining(context: SeriesGameContext) -> float:
+        contexts.append(context)
+        return 1.0 if context.home_team == "Team A" else 0.0
+
+    result = simulate_best_of_seven(
+        "Team A",
+        "Team B",
+        team_a_wins_remaining,
+        simulations=2,
+        seed=1,
+        initial_team_a_wins=1,
+        initial_team_b_wins=3,
+    )
+
+    assert [context.game_number for context in contexts[:3]] == [5, 6, 7]
+    assert contexts[0].team_a_wins == 1
+    assert contexts[0].team_b_wins == 3
+    assert result.team_a_series_win_probability == 1.0
+    assert result.outcome_probabilities["Team A in 7"] == 1.0
+    assert result.length_probabilities == {4: 0.0, 5: 0.0, 6: 0.0, 7: 1.0}
+    assert result.expected_games == 7.0
+
+
+@pytest.mark.parametrize(
+    ("team_a_wins", "team_b_wins"),
+    [(-1, 0), (4, 0), (2, 4)],
+)
+def test_simulation_rejects_invalid_observed_score(
+    team_a_wins: int,
+    team_b_wins: int,
+) -> None:
+    with pytest.raises(ValueError, match="initial series score"):
+        simulate_best_of_seven(
+            "Team A",
+            "Team B",
+            lambda _: 0.5,
+            simulations=1,
+            initial_team_a_wins=team_a_wins,
+            initial_team_b_wins=team_b_wins,
+        )
+
+
+def test_simulation_accepts_tied_score_before_game_seven() -> None:
+    result = simulate_best_of_seven(
+        "Team A",
+        "Team B",
+        lambda _: 1.0,
+        simulations=1,
+        initial_team_a_wins=3,
+        initial_team_b_wins=3,
+    )
+
+    assert result.outcome_probabilities["Team A in 7"] == 1.0

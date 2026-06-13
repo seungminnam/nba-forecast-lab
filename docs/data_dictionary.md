@@ -135,6 +135,16 @@ Stored matchup prediction reports include a UTC prediction timestamp,
 `as_of_date`, game identifier, model version, feature version, home and away
 probabilities, the exact feature values used, and a nullable final outcome.
 
+## Historical Series Replay Report
+
+The replay report stores the cutoff, next-game date, observed games and score,
+next schedule position, both frozen venue-direction matchup reports,
+simulation seed and count, remaining-series distribution, and explicit
+assumption flags.
+
+The observed score is derived from canonical playoff games strictly before the
+cutoff. It is never a user-entered Historical Replay field.
+
 ## Series Simulation Contract
 
 `team_a` is the home-court owner and `team_b` is the opponent.

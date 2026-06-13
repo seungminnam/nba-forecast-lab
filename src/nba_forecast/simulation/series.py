@@ -47,12 +47,15 @@ def simulate_best_of_seven(
     *,
     simulations: int = DEFAULT_SIMULATIONS,
     seed: Optional[int] = None,
+    initial_team_a_wins: int = 0,
+    initial_team_b_wins: int = 0,
 ) -> SeriesSimulationResult:
     """Simulate a best-of-seven series where team A owns home-court advantage."""
     if not team_a or not team_b or team_a == team_b:
         raise ValueError("Series teams must be distinct non-empty names")
     if simulations <= 0:
         raise ValueError("simulations must be greater than zero")
+    _validate_initial_score(initial_team_a_wins, initial_team_b_wins)
 
     rng = random.Random(seed)
     outcome_counts = {
@@ -62,12 +65,14 @@ def simulate_best_of_seven(
     }
     length_counts = {games: 0 for games in range(4, 8)}
     team_a_series_wins = 0
+    completed_games = initial_team_a_wins + initial_team_b_wins
 
     for _ in range(simulations):
-        team_a_wins = 0
-        team_b_wins = 0
+        team_a_wins = initial_team_a_wins
+        team_b_wins = initial_team_b_wins
 
-        for game_index, home_court in enumerate(HOME_COURT_SCHEDULE):
+        for game_index in range(completed_games, len(HOME_COURT_SCHEDULE)):
+            home_court = HOME_COURT_SCHEDULE[game_index]
             home_team, away_team = (
                 (team_a, team_b) if home_court == "A" else (team_b, team_a)
             )
@@ -116,6 +121,17 @@ def simulate_best_of_seven(
             games * probability for games, probability in length_probabilities.items()
         ),
     )
+
+
+def _validate_initial_score(team_a_wins: int, team_b_wins: int) -> None:
+    if (
+        team_a_wins < 0
+        or team_b_wins < 0
+        or team_a_wins >= 4
+        or team_b_wins >= 4
+        or team_a_wins + team_b_wins > 6
+    ):
+        raise ValueError("initial series score must represent an active series")
 
 
 def _normalize(counts: dict, simulations: int) -> dict:
