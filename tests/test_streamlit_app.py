@@ -84,6 +84,54 @@ def test_streamlit_app_renders_actual_next_game_forecast_and_fair_odds(
     )
 
 
+def test_streamlit_app_has_four_tabs() -> None:
+    app = AppTest.from_file(str(APP_PATH)).run()
+
+    assert not app.exception
+    assert [tab.label for tab in app.tabs] == [
+        "Model-Backed Historical Replay",
+        "Assumption Lab",
+        "Model Performance",
+        "Methodology",
+    ]
+
+
+def test_model_performance_tab_renders_documented_metrics_and_tables() -> None:
+    app = AppTest.from_file(str(APP_PATH)).run()
+
+    performance_tab = app.tabs[2]
+    metric_labels = [metric.label for metric in performance_tab.metric]
+    assert metric_labels == [
+        "Brier Score",
+        "Log Loss",
+        "ECE",
+        "ROC-AUC",
+        "Accuracy",
+    ]
+    assert performance_tab.metric[0].value == "0.2073"
+    assert performance_tab.metric[3].value == "0.7321"
+
+    expander_labels = [expander.label for expander in performance_tab.expander]
+    assert expander_labels == [
+        "Baseline Comparison (Untouched 2025-26 Test)",
+        "Training Window & Model Comparison (2024-25 Validation)",
+        "Calibration Selection (2024-25 Validation, Second Half)",
+    ]
+
+
+def test_methodology_tab_renders_expected_sections() -> None:
+    app = AppTest.from_file(str(APP_PATH)).run()
+
+    methodology_tab = app.tabs[3]
+    expander_labels = [expander.label for expander in methodology_tab.expander]
+    assert expander_labels == [
+        "Research Question",
+        "Architecture & Data Flow",
+        "Leakage Prevention",
+        "Model Limitations & Scope",
+    ]
+
+
 def _fake_replay_output() -> SimpleNamespace:
     return SimpleNamespace(
         state=SimpleNamespace(
