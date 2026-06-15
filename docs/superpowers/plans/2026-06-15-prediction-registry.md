@@ -671,7 +671,7 @@ git commit -m "docs: add prediction registry workflow"
 **Files:**
 - Modify: `docs/superpowers/plans/2026-06-15-prediction-registry.md`
 
-- [ ] **Step 1: Review scope and repository hygiene**
+- [x] **Step 1: Review scope and repository hygiene**
 
 Confirm:
 
@@ -681,7 +681,7 @@ Confirm:
 - public claims distinguish forward operating records from historical
   backtests and future automation
 
-- [ ] **Step 2: Re-run final verification**
+- [x] **Step 2: Re-run final verification**
 
 Run:
 
