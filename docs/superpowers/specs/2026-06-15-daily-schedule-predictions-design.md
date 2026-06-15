@@ -191,7 +191,7 @@ The canonical scheduled table rejects:
 - invalid NBA calendar dates
 - identical confirmed home and away teams
 - partially populated or invalid confirmed team identities
-- unsupported game statuses
+- null, non-integer, or negative game statuses
 - a non-null UTC tip-off whose New York calendar date disagrees with
   `nba_game_date`
 
@@ -205,9 +205,11 @@ Unknown or zero-valued source team identities are normalized to null together.
 A row with unconfirmed teams is valid schedule evidence and is never eligible
 for prediction.
 
-Supported source statuses are `1` (not started), `2` (in progress), and `3`
-(final). `is_conditional` is derived from `ifNecessary`. `is_postponed` is
-true when the source postponed indicator is populated with a nonzero value.
+Known source statuses are `1` (not started), `2` (in progress), and `3`
+(final). Other nonnegative integer statuses remain audit evidence but are
+never eligible because the daily selector accepts only status `1`.
+`is_conditional` is derived from `ifNecessary`. `is_postponed` is true when
+the source postponed indicator is populated with a nonzero value.
 
 ## 7. Daily Batch Prediction Application
 
@@ -239,6 +241,11 @@ return predictions, candidate registry, and batch summary
 ```
 
 The application service does not read or write files.
+
+The daily application requires a non-empty canonical season schedule containing
+exactly one snapshot timestamp. A no-game day means that this valid season
+schedule has zero eligible rows for `prediction_date`; it does not mean that
+the schedule artifact itself is empty.
 
 ### 7.1 Determinism
 
