@@ -76,4 +76,4 @@ season-agnostic playoff backtest as the next milestone.
 - [x] Run `git diff --check`.
 - [x] Visually verify the local Streamlit dashboard.
 - [x] Audit claims and confirm `.omc/` remains untracked.
-- [ ] Commit, push, and open a Draft PR.
+- [x] Commit, push, and open a Draft PR.
