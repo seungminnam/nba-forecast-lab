@@ -470,7 +470,7 @@ git commit -m "feat: persist prediction registry"
 - Modify: `tests/test_cli.py`
 - Modify: `src/nba_forecast/cli.py`
 
-- [ ] **Step 1: Write failing CLI registration test**
+- [x] **Step 1: Write failing CLI registration test**
 
 Extend the existing `predict-matchup` command test with:
 
@@ -493,7 +493,7 @@ the test; do not expose a user-facing timestamp override. Two normal CLI
 invocations occur at different timestamps and therefore correctly represent
 two distinct prediction events.
 
-- [ ] **Step 2: Run CLI registration test and verify RED**
+- [x] **Step 2: Run CLI registration test and verify RED**
 
 Run:
 
@@ -503,7 +503,7 @@ Run:
 
 Expected: parser failure because `--registry-dir` is unsupported.
 
-- [ ] **Step 3: Implement optional registration composition**
+- [x] **Step 3: Implement optional registration composition**
 
 Add optional `--registry-dir` to `predict-matchup`. When present:
 
@@ -515,7 +515,7 @@ Add optional `--registry-dir` to `predict-matchup`. When present:
 Keep the existing standalone JSON report behavior unchanged when the flag is
 absent.
 
-- [ ] **Step 4: Write failing settlement and reporting CLI tests**
+- [x] **Step 4: Write failing settlement and reporting CLI tests**
 
 Add tests invoking:
 
@@ -536,7 +536,7 @@ artifacts/reports/prediction_registry_summary.csv
 artifacts/reports/prediction_registry_metrics.csv
 ```
 
-- [ ] **Step 5: Run new CLI tests and verify RED**
+- [x] **Step 5: Run new CLI tests and verify RED**
 
 Run:
 
@@ -546,13 +546,13 @@ Run:
 
 Expected: parser failure because both commands are unsupported.
 
-- [ ] **Step 6: Implement settlement and reporting CLI composition**
+- [x] **Step 6: Implement settlement and reporting CLI composition**
 
 Add parser entries and private command functions that call only the shared
 application and storage APIs. Do not duplicate matching, metric, or validation
 logic in `cli.py`.
 
-- [ ] **Step 7: Run CLI tests and verify GREEN**
+- [x] **Step 7: Run CLI tests and verify GREEN**
 
 Run:
 
@@ -562,7 +562,7 @@ Run:
 
 Expected: all CLI tests pass.
 
-- [ ] **Step 8: Commit Task 5**
+- [x] **Step 8: Commit Task 5**
 
 ```bash
 git add src/nba_forecast/cli.py tests/test_cli.py

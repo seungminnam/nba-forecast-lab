@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from nba_forecast.cli import main
+from nba_forecast.cli import _predict_matchup, main
 from nba_forecast.data.source_nba import raw_cache_path
 from nba_forecast.features.game_features import MODEL_FEATURE_COLUMNS
 from nba_forecast.models.artifacts import (
@@ -314,6 +314,120 @@ def test_predict_matchup_command_writes_auditable_json_report(tmp_path: Path) ->
     assert report["matchup"]["season_key"] == "2025-26"
     assert 0.0 < report["home_win_probability"] < 1.0
     assert set(report["features"]) == set(MODEL_FEATURE_COLUMNS)
+
+
+def test_predict_matchup_can_idempotently_register_a_fixed_prediction(
+    tmp_path: Path,
+) -> None:
+    raw_paths = _write_multi_season_raw_caches(tmp_path)
+    main(
+        [
+            "build-games",
+            "--raw-csv",
+            *(str(path) for path in raw_paths),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    bundle_path = tmp_path / "model.joblib"
+    _write_test_bundle(bundle_path)
+    timestamp = datetime(2026, 10, 20, 12, tzinfo=timezone.utc)
+    arguments = (
+        tmp_path / "processed" / "games.parquet",
+        bundle_path,
+        "scheduled-1",
+        pd.Timestamp("2025-10-25"),
+        pd.Timestamp("2025-10-25"),
+        "22025",
+        "Regular Season",
+        "2025-26",
+        1,
+        2,
+        "HOM",
+        "AWY",
+        tmp_path,
+    )
+
+    _predict_matchup(
+        *arguments,
+        registry_dir=tmp_path / "registry",
+        prediction_timestamp=timestamp,
+    )
+    _predict_matchup(
+        *arguments,
+        registry_dir=tmp_path / "registry",
+        prediction_timestamp=timestamp,
+    )
+
+    registry = pd.read_parquet(tmp_path / "registry" / "predictions.parquet")
+    assert len(registry) == 1
+    assert (tmp_path / "registry" / "prediction_registry.duckdb").exists()
+
+
+def test_settle_and_report_predictions_commands(tmp_path: Path) -> None:
+    raw_paths = _write_multi_season_raw_caches(tmp_path)
+    main(
+        [
+            "build-games",
+            "--raw-csv",
+            *(str(path) for path in raw_paths),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    games_path = tmp_path / "processed" / "games.parquet"
+    games = pd.read_parquet(games_path)
+    target = games.iloc[-1]
+    bundle_path = tmp_path / "model.joblib"
+    _write_test_bundle(bundle_path)
+    _predict_matchup(
+        games_path,
+        bundle_path,
+        str(target["game_id"]),
+        pd.Timestamp(target["game_date"]),
+        pd.Timestamp(target["game_date"]),
+        str(target["season_id"]),
+        str(target["season_type"]),
+        str(target["season_key"]),
+        int(target["home_team_id"]),
+        int(target["away_team_id"]),
+        str(target["home_team_abbreviation"]),
+        str(target["away_team_abbreviation"]),
+        tmp_path,
+        registry_dir=tmp_path / "registry",
+        prediction_timestamp=datetime(2026, 10, 20, 12, tzinfo=timezone.utc),
+    )
+
+    settle_exit = main(
+        [
+            "settle-predictions",
+            "--registry-dir",
+            str(tmp_path / "registry"),
+            "--games-parquet",
+            str(games_path),
+        ]
+    )
+    report_exit = main(
+        [
+            "report-predictions",
+            "--registry-dir",
+            str(tmp_path / "registry"),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+
+    settled = pd.read_parquet(tmp_path / "registry" / "predictions.parquet")
+    metrics = pd.read_csv(
+        tmp_path / "artifacts" / "reports" / "prediction_registry_metrics.csv"
+    )
+    assert settle_exit == 0
+    assert report_exit == 0
+    assert settled["final_outcome"].notna().all()
+    assert metrics["scope"].tolist() == ["all_models", "model:cli-test-raw"]
+    assert (
+        tmp_path / "artifacts" / "reports" / "prediction_registry_summary.csv"
+    ).exists()
 
 
 def test_replay_series_command_writes_model_backed_json_report(tmp_path: Path) -> None:
