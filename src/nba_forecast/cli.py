@@ -3,6 +3,7 @@
 import argparse
 import json
 from collections.abc import Sequence
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -13,9 +14,18 @@ from nba_forecast.application.playoff_backtest import (
     PlayoffBacktestInput,
     run_playoff_backtest,
 )
+from nba_forecast.application.prediction_registry import (
+    build_prediction_registry_report,
+    register_prediction,
+    settle_predictions,
+)
 from nba_forecast.application.series_replay import SeriesReplayInput, run_series_replay
 from nba_forecast.application.simulator_lab import SimulatorLabInput, run_simulator_lab
 from nba_forecast.config import HISTORICAL_SEASONS, RAW_DATA_DIR
+from nba_forecast.data.prediction_registry_storage import (
+    load_prediction_registry,
+    write_prediction_registry,
+)
 from nba_forecast.data.source_nba import (
     load_or_fetch_history,
     load_or_fetch_team_games,
@@ -85,6 +95,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             args.home_team_abbreviation,
             args.away_team_abbreviation,
             args.output_dir,
+            args.registry_dir,
         )
     if args.command == "replay-series":
         return _replay_series(
@@ -109,6 +120,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             args.model_bundle,
             args.season_key,
             args.season_id,
+            args.output_dir,
+        )
+    if args.command == "settle-predictions":
+        return _settle_predictions(
+            args.registry_dir,
+            args.games_parquet,
+        )
+    if args.command == "report-predictions":
+        return _report_predictions(
+            args.registry_dir,
             args.output_dir,
         )
 
@@ -206,6 +227,7 @@ def _build_parser() -> argparse.ArgumentParser:
     prediction_parser.add_argument("--home-team-abbreviation", required=True)
     prediction_parser.add_argument("--away-team-abbreviation", required=True)
     prediction_parser.add_argument("--output-dir", type=Path, required=True)
+    prediction_parser.add_argument("--registry-dir", type=Path)
 
     replay_parser = subparsers.add_parser(
         "replay-series",
@@ -235,6 +257,20 @@ def _build_parser() -> argparse.ArgumentParser:
     backtest_parser.add_argument("--season-key", required=True)
     backtest_parser.add_argument("--season-id", required=True)
     backtest_parser.add_argument("--output-dir", type=Path, required=True)
+
+    settlement_parser = subparsers.add_parser(
+        "settle-predictions",
+        help="Attach completed canonical outcomes to registered predictions.",
+    )
+    settlement_parser.add_argument("--registry-dir", type=Path, required=True)
+    settlement_parser.add_argument("--games-parquet", type=Path, required=True)
+
+    report_parser = subparsers.add_parser(
+        "report-predictions",
+        help="Report settled operating performance from the prediction registry.",
+    )
+    report_parser.add_argument("--registry-dir", type=Path, required=True)
+    report_parser.add_argument("--output-dir", type=Path, required=True)
 
     return parser
 
@@ -375,6 +411,8 @@ def _predict_matchup(
     home_team_abbreviation: str,
     away_team_abbreviation: str,
     output_dir: Path,
+    registry_dir: Optional[Path] = None,
+    prediction_timestamp: Optional[datetime] = None,
 ) -> int:
     games = pd.read_parquet(games_parquet)
     bundle = load_model_bundle(model_bundle)
@@ -393,12 +431,23 @@ def _predict_matchup(
         ),
         as_of_date=as_of_date,
         bundle=bundle,
+        prediction_timestamp=prediction_timestamp,
     )
     prediction_dir = output_dir / "artifacts" / "predictions"
     prediction_dir.mkdir(parents=True, exist_ok=True)
     prediction_path = prediction_dir / "matchup_prediction.json"
     prediction_path.write_text(json.dumps(output.to_report(), indent=2, sort_keys=True))
     print(f"Wrote frozen-model matchup prediction to {prediction_path}")
+    if registry_dir is not None:
+        registration = register_prediction(
+            load_prediction_registry(registry_dir),
+            output,
+        )
+        write_prediction_registry(registration.registry, registry_dir)
+        print(
+            f"Prediction {registration.prediction_id} "
+            f"registry status: {registration.status}"
+        )
     return 0
 
 
@@ -469,6 +518,34 @@ def _backtest_playoffs(
         f"Wrote {len(output.predictions)} playoff predictions to {prediction_path} "
         f"and aggregate metrics to {metrics_path}"
     )
+    return 0
+
+
+def _settle_predictions(registry_dir: Path, games_parquet: Path) -> int:
+    result = settle_predictions(
+        load_prediction_registry(registry_dir),
+        pd.read_parquet(games_parquet),
+    )
+    write_prediction_registry(result.registry, registry_dir)
+    print(
+        f"Settled {result.settled_count} predictions; "
+        f"{result.already_settled_count} already settled; "
+        f"{result.unmatched_count} unmatched"
+    )
+    return 0
+
+
+def _report_predictions(registry_dir: Path, output_dir: Path) -> int:
+    report = build_prediction_registry_report(
+        load_prediction_registry(registry_dir)
+    )
+    report_dir = output_dir / "artifacts" / "reports"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    summary_path = report_dir / "prediction_registry_summary.csv"
+    metrics_path = report_dir / "prediction_registry_metrics.csv"
+    report.summary.to_csv(summary_path, index=False)
+    report.metrics.to_csv(metrics_path, index=False)
+    print(f"Wrote prediction registry reports to {summary_path} and {metrics_path}")
     return 0
 
 

@@ -228,3 +228,29 @@ Streamlit Model Performance tab (st.metric + st.dataframe)
 no runtime dependency on `data/snapshots/`, `data/processed/`, or
 `artifacts/models/`. Unlike Historical Replay and Assumption Lab, these two
 tabs render identically whether or not the frozen snapshot is present.
+
+## Forward Prediction Registry Flow
+
+```text
+predict_scheduled_matchup
+        |
+        v
+immutable prediction event -> predictions.parquet -> DuckDB predictions table
+                                      |
+validated canonical completed games --+
+                                      |
+                                      v
+                         outcome-only settlement
+                                      |
+                                      v
+                    cumulative and model-version metrics
+```
+
+`application/prediction_registry.py` owns deterministic identity, payload
+fingerprints, idempotent registration, immutable settlement, and reporting.
+`data/prediction_registry_storage.py` owns local Parquet persistence and DuckDB
+synchronization. `cli.py` only composes those services.
+
+Parquet is authoritative. DuckDB can be rebuilt from it. The workflow is
+manual and local until future schedule ingestion and daily automation are
+implemented.

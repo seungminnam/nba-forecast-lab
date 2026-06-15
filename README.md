@@ -66,6 +66,8 @@ season into the playoffs.
 - Auditable `as_of_date` scheduled-matchup prediction workflow
 - Model-backed playoff-series Historical Replay at arbitrary cutoffs
 - Season-agnostic chronological playoff backtest and prediction-level reports
+- Immutable local Prediction Registry with idempotent registration, canonical
+  result settlement, and model-version performance reports
 - Interactive Dashboard UI: Historical Replay, Assumption Lab, Model
   Performance, and Methodology tabs
 
@@ -198,6 +200,29 @@ playoff population.
 The 2025-26 playoff result is now evaluation evidence. It may motivate future
 features, but it cannot be reused as unbiased evidence after selecting changes
 against it.
+
+## Forward Prediction Registry
+
+The project can now preserve forward predictions before outcomes are known,
+then settle them against validated canonical completed games. Each event keeps
+its original timestamp, model and feature versions, probabilities, and exact
+feature snapshot. Reprocessing an identical event is idempotent; a conflicting
+payload cannot overwrite the original evidence.
+
+```bash
+nba-forecast predict-matchup ... --registry-dir data/registry
+nba-forecast settle-predictions \
+  --registry-dir data/registry \
+  --games-parquet data/processed/games.parquet
+nba-forecast report-predictions \
+  --registry-dir data/registry \
+  --output-dir .
+```
+
+Parquet is the durable registry and DuckDB is the local SQL query surface.
+This is a verified manual operating workflow, not yet a daily automated or
+hosted service. See [ADR 0005](docs/decisions/0005-immutable-prediction-registry.md)
+and `docs/runbook.md`.
 
 ## Dashboard UI
 

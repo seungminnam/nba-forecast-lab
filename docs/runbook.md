@@ -311,6 +311,73 @@ every game. This favors correctness and reuse of the established leakage-safe
 path over runtime optimization. A future daily prediction registry can
 incrementally persist team state instead of replaying the entire history.
 
+## Operate the Forward Prediction Registry
+
+Add `--registry-dir data/registry` to `predict-matchup` to preserve the
+prediction event in addition to writing the existing JSON report:
+
+```bash
+nba-forecast predict-matchup \
+  --games-parquet data/processed/games.parquet \
+  --model-bundle artifacts/models/2026-06-11-recent5-raw.joblib \
+  --game-id scheduled-example \
+  --game-date 2026-10-22 \
+  --as-of-date 2026-10-22 \
+  --season-id 22026 \
+  --season-type "Regular Season" \
+  --season-key 2026-27 \
+  --home-team-id 1 \
+  --away-team-id 2 \
+  --home-team-abbreviation HOM \
+  --away-team-abbreviation AWY \
+  --output-dir . \
+  --registry-dir data/registry
+```
+
+A normal repeat run receives a new timestamp and is preserved as another
+prediction event. Reprocessing the exact same fixed-timestamp event is
+idempotent. A conflicting payload with the same identity is rejected.
+
+After refreshing and rebuilding completed canonical games, settle matching
+predictions:
+
+```bash
+nba-forecast settle-predictions \
+  --registry-dir data/registry \
+  --games-parquet data/processed/games.parquet
+```
+
+Generate cumulative and model-version probability metrics:
+
+```bash
+nba-forecast report-predictions \
+  --registry-dir data/registry \
+  --output-dir .
+```
+
+This writes:
+
+- `artifacts/reports/prediction_registry_summary.csv`
+- `artifacts/reports/prediction_registry_metrics.csv`
+
+Inspect the replaceable SQL query surface:
+
+```bash
+python -c "import duckdb; print(duckdb.connect('data/registry/prediction_registry.duckdb', read_only=True).execute('select game_id, model_version, home_win_probability, final_outcome from predictions order by prediction_timestamp').fetchdf())"
+```
+
+`data/registry/predictions.parquet` is authoritative. If DuckDB synchronization
+fails, retain the Parquet artifact and rerun a valid registry write to rebuild
+the `predictions` table. The registry is a manual local workflow; future
+schedule ingestion, daily automation, and hosted persistence are separate
+milestones.
+
+A local smoke run on 2026-06-15 registered and settled 2026 Finals Game 5
+against the refreshed canonical games table. DuckDB preserved the frozen
+`54.57%` SAS home-win probability, the observed SAS loss, and its `0.297783`
+Brier contribution. This verifies the operating workflow; it is not a new
+model-performance claim.
+
 ## Run a Seeded Series Simulation
 
 Run a model-independent engine check with a synthetic probability provider:
