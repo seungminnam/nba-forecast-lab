@@ -7,12 +7,73 @@ import pandas as pd
 import streamlit as st
 
 from nba_forecast.application.model_performance import build_model_performance_report
-from nba_forecast.application.series_replay import SeriesReplayInput, run_series_replay
+from nba_forecast.application.series_replay import (
+    SeriesReplayInput,
+    SeriesReplayOutput,
+    run_series_replay,
+)
 from nba_forecast.application.simulator_lab import SimulatorLabInput, run_simulator_lab
-from nba_forecast.models.artifacts import load_model_bundle
+from nba_forecast.models.artifacts import ModelBundle, load_model_bundle
 
 GAMES_PATH = Path("data/snapshots/2026-06-10/games.parquet")
 MODEL_PATH = Path("data/snapshots/2026-06-10/2026-06-11-recent5-raw.joblib")
+SNAPSHOT_DATE = "2026-06-10"
+GITHUB_URL = "https://github.com/seungminnam/nba-forecast-lab"
+FEATURED_SERIES = SeriesReplayInput(
+    as_of_date=pd.Timestamp("2026-06-11"),
+    next_game_date=pd.Timestamp("2026-06-13"),
+    season_id="42025",
+    season_type="Playoffs",
+    season_key="2025-26",
+    team_a_id=1610612759,
+    team_a_abbreviation="SAS",
+    team_b_id=1610612752,
+    team_b_abbreviation="NYK",
+    simulations=10_000,
+    seed=2026,
+)
+
+
+def _format_american_odds(odds: int) -> str:
+    return f"+{odds}" if odds > 0 else str(odds)
+
+
+@st.cache_data
+def _load_games(path: str) -> pd.DataFrame:
+    return pd.read_parquet(path)
+
+
+@st.cache_resource
+def _load_model(path: str) -> ModelBundle:
+    return load_model_bundle(Path(path))
+
+
+@st.cache_resource
+def _build_featured_replay(games_path: str, model_path: str) -> SeriesReplayOutput:
+    return run_series_replay(
+        _load_games(games_path),
+        FEATURED_SERIES,
+        _load_model(model_path),
+    )
+
+
+def _dark_chart(chart: alt.Chart) -> alt.Chart:
+    return (
+        chart.configure(background="#0E1117")
+        .configure_axis(
+            domainColor="#4B5563",
+            gridColor="#252B33",
+            labelColor="#D1D5DB",
+            tickColor="#4B5563",
+            titleColor="#F7FAFC",
+        )
+        .configure_legend(
+            labelColor="#D1D5DB",
+            titleColor="#F7FAFC",
+        )
+        .configure_title(color="#F7FAFC")
+        .configure_view(stroke="#2A3038")
+    )
 
 st.set_page_config(
     page_title="NBA Forecast Lab",
@@ -34,11 +95,56 @@ st.markdown(
     .hero {
         padding: 24px 28px;
         border-radius: 20px;
-        background: linear-gradient(120deg, #1C2128, #0E1117 65%);
+        background:
+            radial-gradient(
+                circle at 90% 20%, rgba(45, 212, 191, .14), transparent 36%
+            ),
+            linear-gradient(120deg, #1C2128, #0E1117 65%);
         border: 1px solid #2A3038;
         margin-bottom: 18px;
     }
+    .hero h1 { margin: 6px 0 8px; }
+    .hero p { color: #C3CAD3; margin: 0; max-width: 760px; }
     .eyebrow { color: #2DD4BF; font-weight: 700; letter-spacing: .12em; }
+    .forecast-card {
+        background: linear-gradient(
+            145deg, rgba(24, 32, 38, .96), rgba(16, 23, 28, .96)
+        );
+        border: 1px solid #315C58;
+        border-radius: 18px;
+        padding: 20px 22px;
+        margin: -4px 0 14px;
+    }
+    .forecast-label {
+        color: #5EEAD4;
+        font-size: .78rem;
+        font-weight: 800;
+        letter-spacing: .12em;
+    }
+    .forecast-context { color: #9CA3AF; font-size: .86rem; margin-top: 4px; }
+    .forecast-matchup {
+        color: #F7FAFC;
+        font-size: 1.22rem;
+        font-weight: 700;
+        margin-top: 14px;
+    }
+    .forecast-probability {
+        color: #F7FAFC;
+        font-size: 1.72rem;
+        font-weight: 800;
+        margin-top: 2px;
+    }
+    .forecast-odds { color: #A7F3D0; margin-top: 5px; }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; }
+    .badge {
+        background: #171C22;
+        border: 1px solid #303842;
+        border-radius: 999px;
+        color: #D1D5DB;
+        font-size: .82rem;
+        padding: 7px 11px;
+    }
+    a.badge { color: #5EEAD4; text-decoration: none; }
     .notice {
         background: #261d0c;
         border: 1px solid #75561d;
@@ -47,6 +153,14 @@ st.markdown(
         border-radius: 12px;
         margin-bottom: 18px;
     }
+    .footer {
+        border-top: 1px solid #2A3038;
+        color: #9CA3AF;
+        font-size: .82rem;
+        margin-top: 28px;
+        padding: 18px 2px 8px;
+    }
+    .footer a { color: #5EEAD4; text-decoration: none; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -56,13 +170,58 @@ st.markdown(
     """
     <div class="hero">
       <div class="eyebrow">NBA FORECAST LAB</div>
-      <h1>Historical Replay & Best-of-7 Simulator</h1>
-      <p>Reconstruct a real playoff series at a declared cutoff or explore
-      explicit hypothetical assumptions.</p>
+      <h1>Leakage-Safe NBA Game Forecasting</h1>
+      <p>Reconstruct historical playoff series at a declared cutoff, inspect
+      calibrated game probabilities, and explore explicit best-of-seven
+      assumptions.</p>
     </div>
     """,
     unsafe_allow_html=True,
 )
+
+featured_replay = None
+if GAMES_PATH.exists() and MODEL_PATH.exists():
+    try:
+        featured_replay = _build_featured_replay(str(GAMES_PATH), str(MODEL_PATH))
+    except ValueError:
+        featured_replay = None
+
+if featured_replay is not None and featured_replay.next_game_forecast is not None:
+    featured_game = featured_replay.next_game_forecast
+    featured_matchup = (
+        f"SAS vs NYK · Game {featured_game.game_number} · SAS home"
+    )
+    featured_probabilities = (
+        f"SAS {featured_game.home_win_probability:.1%} · "
+        f"NYK {featured_game.away_win_probability:.1%}"
+    )
+    featured_odds = (
+        "Model-implied fair odds · "
+        f"SAS {featured_game.home_fair_odds.decimal:.2f} / "
+        f"{_format_american_odds(featured_game.home_fair_odds.american)} · "
+        f"NYK {featured_game.away_fair_odds.decimal:.2f} / "
+        f"{_format_american_odds(featured_game.away_fair_odds.american)}"
+    )
+    st.markdown(
+        f"""
+        <div class="forecast-card">
+          <div class="forecast-label">FEATURED HISTORICAL FORECAST</div>
+          <div class="forecast-context">Frozen snapshot · 2026-06-11 cutoff</div>
+          <div class="forecast-matchup">{featured_matchup}</div>
+          <div class="forecast-probability">{featured_probabilities}</div>
+          <div class="forecast-odds">{featured_odds}</div>
+        </div>
+        <div class="badge-row">
+          <span class="badge">Frozen model Brier 0.2073</span>
+          <span class="badge">
+            Baseline Logistic Regression vs Elo Brier improvement 3.33%
+          </span>
+          <span class="badge">Point-in-time features only</span>
+          <a class="badge" href="{GITHUB_URL}">GitHub repository</a>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 replay_tab, assumption_tab, performance_tab, methodology_tab = st.tabs(
     [
@@ -105,7 +264,7 @@ def _render_charts(
                 ],
             )
         )
-        st.altair_chart(outcome_chart, use_container_width=True)
+        st.altair_chart(_dark_chart(outcome_chart), use_container_width=True)
 
     with charts[1]:
         st.subheader("Series length distribution")
@@ -122,17 +281,13 @@ def _render_charts(
                 tooltip=["games:O", alt.Tooltip("probability:Q", format=".1%")],
             )
         )
-        st.altair_chart(length_chart, use_container_width=True)
-
-
-def _format_american_odds(odds: int) -> str:
-    return f"+{odds}" if odds > 0 else str(odds)
+        st.altair_chart(_dark_chart(length_chart), use_container_width=True)
 
 
 with replay_tab:
     st.markdown(
         """
-        <div class="notice"><strong>Historical Replay.</strong> The observed
+        <div class="notice">ℹ️ <strong>Historical Replay.</strong> The observed
         series score is reconstructed from completed playoff games strictly
         before the cutoff. Venue probabilities are frozen at that cutoff;
         psychological effects and future team-state updates are not modeled.
@@ -145,30 +300,30 @@ with replay_tab:
         dates = st.columns(2)
         as_of_date = dates[0].date_input(
             "As-of date",
-            value=pd.Timestamp("2026-06-11").date(),
+            value=FEATURED_SERIES.as_of_date.date(),
             key="replay_as_of",
         )
         next_game_date = dates[1].date_input(
             "Next game date",
-            value=pd.Timestamp("2026-06-13").date(),
+            value=FEATURED_SERIES.next_game_date.date(),
             key="replay_next_game",
         )
         teams = st.columns(2)
         team_a_abbreviation = teams[0].text_input(
             "Team A · home-court owner",
-            value="SAS",
+            value=FEATURED_SERIES.team_a_abbreviation,
             key="replay_team_a",
         )
         team_b_abbreviation = teams[1].text_input(
             "Team B",
-            value="NYK",
+            value=FEATURED_SERIES.team_b_abbreviation,
             key="replay_team_b",
         )
         team_ids = st.columns(2)
         team_a_id = int(
             team_ids[0].number_input(
                 "Team A ID",
-                value=1610612759,
+                value=FEATURED_SERIES.team_a_id,
                 step=1,
                 key="replay_team_a_id",
             )
@@ -176,7 +331,7 @@ with replay_tab:
         team_b_id = int(
             team_ids[1].number_input(
                 "Team B ID",
-                value=1610612752,
+                value=FEATURED_SERIES.team_b_id,
                 step=1,
                 key="replay_team_b_id",
             )
@@ -185,13 +340,13 @@ with replay_tab:
         replay_simulations = replay_settings[0].select_slider(
             "Replay Monte Carlo simulations",
             options=[1_000, 5_000, 10_000, 25_000, 50_000],
-            value=10_000,
+            value=FEATURED_SERIES.simulations,
         )
         replay_seed = int(
             replay_settings[1].number_input(
                 "Replay random seed",
                 min_value=0,
-                value=2026,
+                value=FEATURED_SERIES.seed,
                 step=1,
             )
         )
@@ -206,7 +361,7 @@ with replay_tab:
         else:
             try:
                 replay_output = run_series_replay(
-                    pd.read_parquet(GAMES_PATH),
+                    _load_games(str(GAMES_PATH)),
                     SeriesReplayInput(
                         as_of_date=pd.Timestamp(as_of_date),
                         next_game_date=pd.Timestamp(next_game_date),
@@ -220,7 +375,7 @@ with replay_tab:
                         simulations=replay_simulations,
                         seed=replay_seed,
                     ),
-                    load_model_bundle(MODEL_PATH),
+                    _load_model(str(MODEL_PATH)),
                 )
             except ValueError as error:
                 st.error(str(error))
@@ -309,7 +464,7 @@ with replay_tab:
 with assumption_tab:
     st.markdown(
         """
-        <div class="notice"><strong>Assumption-based demo.</strong> These inputs
+        <div class="notice">⚠️ <strong>Assumption-based demo.</strong> These inputs
         are hypothetical and are not current frozen-model NBA predictions.</div>
         """,
         unsafe_allow_html=True,
@@ -503,3 +658,12 @@ mutation-based regression tests.
 See `docs/model_card.md` for the complete limitations list.
             """
         )
+
+st.markdown(
+    f"""
+    <div class="footer">
+      <a href="{GITHUB_URL}">GitHub repository</a> · Data snapshot: {SNAPSHOT_DATE}
+    </div>
+    """,
+    unsafe_allow_html=True,
+)

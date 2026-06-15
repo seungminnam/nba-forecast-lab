@@ -290,6 +290,12 @@ accent. The injected CSS in `streamlit_app.py` is hand-tuned to match this
 palette; if either changes, update the other so the app does not mix two
 color schemes.
 
+The hero forecast is generated from the committed snapshot and the shared
+`FEATURED_SERIES` replay input. Keep the label **Featured Historical
+Forecast** and its cutoff disclosure unless the app gains an automated,
+verified current-data refresh. Do not relabel the card as live merely because
+the dashboard itself is deployed.
+
 ## Deploy to Streamlit Community Cloud
 
 The deployed app reads `data/snapshots/2026-06-10/games.parquet` and

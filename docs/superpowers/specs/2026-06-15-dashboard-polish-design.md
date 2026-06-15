@@ -6,9 +6,9 @@ Proposed on 2026-06-15.
 
 ## Context
 
-The dashboard (`streamlit_app.py`) was deployed to Streamlit Community Cloud per
-`docs/superpowers/plans/2026-06-13-dashboard-deployment.md`, adding the
-Model Performance and Methodology tabs and a dark/teal theme.
+The dashboard (`streamlit_app.py`) was prepared for Streamlit Community Cloud
+deployment per `docs/superpowers/plans/2026-06-13-dashboard-deployment.md`,
+adding the Model Performance and Methodology tabs and a dark/teal theme.
 
 After viewing the live app, feedback identified three gaps, all relevant
 because the primary use case is a portfolio/job-search artifact that should
@@ -80,7 +80,7 @@ data/snapshots/2026-06-10/*.joblib       --+--> run_series_replay(FEATURED_SERIE
                                        (win probability, fair odds)
                                                   |
                                                   v
-                                       Hero "LIVE FORECAST" card
+                              Hero "FEATURED HISTORICAL FORECAST" card
 ```
 
 Computed once near the top of the script and cached so it does not re-run on
@@ -96,18 +96,22 @@ every Streamlit rerun (every widget interaction reruns the whole script):
 - H1: "Leakage-Safe NBA Game Forecasting" (revised from "Historical Replay &
   Best-of-7 Simulator" — more descriptive for a first-time visitor).
 - Tagline: existing copy, lightly trimmed.
-- **LIVE FORECAST card**: `FEATURED_SERIES` team abbreviations, the next
-  game's home win probability, and model-implied fair odds (decimal +
-  American via the existing `_format_american_odds`).
-- **Badge row**: a performance badge ("Brier 0.207 · beats Elo by 3.3%",
-  sourced from `build_model_performance_report().baseline_comparison`) and a
-  GitHub link badge (`https://github.com/seungminnam/nba-forecast-lab`).
+- **FEATURED HISTORICAL FORECAST card**: `FEATURED_SERIES` team
+  abbreviations, the historical next game's home win probability, and
+  model-implied fair odds (decimal + American via the existing
+  `_format_american_odds`). It is explicitly labeled as a frozen historical
+  snapshot, not a live/current prediction.
+- **Badge row**: separate factual badges for the frozen model final-test
+  Brier Score (`0.2073`) and the earlier baseline Logistic Regression's
+  measured Brier improvement versus Elo (`3.33%`), plus a GitHub link badge.
+  The two performance claims must not be combined as though the frozen model
+  itself produced the `3.33%` improvement.
 
 **Fallback (snapshot missing, e.g. local dev before the pipeline has run):**
-if `GAMES_PATH` / `MODEL_PATH` do not exist, the hero renders without the LIVE
-FORECAST card and badge row — same hero copy, no broken state, no warning
-clutter in the hero itself (the existing Replay-tab warning still covers
-that case when the user clicks "Run historical replay").
+if `GAMES_PATH` / `MODEL_PATH` do not exist, the hero renders without the
+featured historical forecast card and badge row — same hero copy, no broken
+state, no warning clutter in the hero itself (the existing Replay-tab warning
+still covers that case when the user clicks "Run historical replay").
 
 ### 2. Visual polish
 
@@ -139,9 +143,9 @@ that case when the user clicks "Run historical replay").
 
 `tests/test_streamlit_app.py` gains `AppTest` coverage for:
 
-- The hero renders a LIVE FORECAST card with `FEATURED_SERIES` team
-  abbreviations and a probability value when the snapshot exists.
-- The hero omits the LIVE FORECAST card and badge row when `GAMES_PATH` /
+- The hero renders a FEATURED HISTORICAL FORECAST card with `FEATURED_SERIES`
+  team abbreviations and a probability value when the snapshot exists.
+- The hero omits the forecast card and badge row when `GAMES_PATH` /
   `MODEL_PATH` are mocked missing (reusing the existing monkeypatch pattern).
 - The footer renders the GitHub link and the "2026-06-10" snapshot date.
 - The Replay tab's default widget values match `FEATURED_SERIES`.

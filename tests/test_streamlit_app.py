@@ -132,6 +132,77 @@ def test_methodology_tab_renders_expected_sections() -> None:
     ]
 
 
+def test_dashboard_hero_renders_featured_historical_forecast() -> None:
+    app = AppTest.from_file(str(APP_PATH)).run()
+
+    assert not app.exception
+    markdown = [element.value for element in app.markdown]
+    assert any("FEATURED HISTORICAL FORECAST" in value for value in markdown)
+    assert any(
+        "SAS" in value and "NYK" in value and "54.6%" in value for value in markdown
+    )
+    assert any(
+        "Frozen model Brier" in value and "0.2073" in value for value in markdown
+    )
+    assert any(
+        "Baseline Logistic Regression" in value and "3.33%" in value
+        for value in markdown
+    )
+    assert not any("LIVE FORECAST" in value for value in markdown)
+
+
+def test_dashboard_hero_omits_forecast_when_snapshot_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_exists = Path.exists
+    monkeypatch.setattr(
+        Path,
+        "exists",
+        lambda path: (
+            False
+            if str(path)
+            in {
+                "data/snapshots/2026-06-10/games.parquet",
+                "data/snapshots/2026-06-10/2026-06-11-recent5-raw.joblib",
+            }
+            else original_exists(path)
+        ),
+    )
+
+    app = AppTest.from_file(str(APP_PATH)).run()
+
+    assert not app.exception
+    markdown = [element.value for element in app.markdown]
+    assert not any("FEATURED HISTORICAL FORECAST" in value for value in markdown)
+    assert not any("Frozen model Brier" in value for value in markdown)
+
+
+def test_replay_defaults_match_featured_series() -> None:
+    app = AppTest.from_file(str(APP_PATH)).run()
+
+    assert not app.exception
+    assert app.date_input[0].value == pd.Timestamp("2026-06-11").date()
+    assert app.date_input[1].value == pd.Timestamp("2026-06-13").date()
+    assert app.text_input[0].value == "SAS"
+    assert app.text_input[1].value == "NYK"
+    assert app.number_input[0].value == 1610612759
+    assert app.number_input[1].value == 1610612752
+
+
+def test_dashboard_renders_semantic_notices_and_footer() -> None:
+    app = AppTest.from_file(str(APP_PATH)).run()
+
+    assert not app.exception
+    markdown = [element.value for element in app.markdown]
+    assert any("ℹ️" in value and "Historical Replay" in value for value in markdown)
+    assert any("⚠️" in value and "Assumption-based demo" in value for value in markdown)
+    assert any(
+        "github.com/seungminnam/nba-forecast-lab" in value
+        and "Data snapshot: 2026-06-10" in value
+        for value in markdown
+    )
+
+
 def _fake_replay_output() -> SimpleNamespace:
     return SimpleNamespace(
         state=SimpleNamespace(
