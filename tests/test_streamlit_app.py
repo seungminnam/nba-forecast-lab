@@ -11,8 +11,12 @@ from nba_forecast.models import artifacts
 APP_PATH = Path(__file__).parents[1] / "streamlit_app.py"
 
 
+def _run_app() -> AppTest:
+    return AppTest.from_file(str(APP_PATH)).run(timeout=10)
+
+
 def test_streamlit_app_renders_simulator_results() -> None:
-    app = AppTest.from_file(str(APP_PATH)).run()
+    app = _run_app()
 
     assert not app.exception
     assert [tab.label for tab in app.tabs] == [
@@ -33,7 +37,7 @@ def test_streamlit_app_renders_simulator_results() -> None:
 
 
 def test_streamlit_app_shows_distinct_team_validation_error() -> None:
-    app = AppTest.from_file(str(APP_PATH)).run()
+    app = _run_app()
 
     app.text_input[3].input("Knicks").run()
 
@@ -65,7 +69,7 @@ def test_streamlit_app_renders_actual_next_game_forecast_and_fair_odds(
         "run_series_replay",
         lambda *_: _fake_replay_output(),
     )
-    app = AppTest.from_file(str(APP_PATH)).run()
+    app = _run_app()
 
     app.button[0].click().run()
 
@@ -85,7 +89,7 @@ def test_streamlit_app_renders_actual_next_game_forecast_and_fair_odds(
 
 
 def test_streamlit_app_has_four_tabs() -> None:
-    app = AppTest.from_file(str(APP_PATH)).run()
+    app = _run_app()
 
     assert not app.exception
     assert [tab.label for tab in app.tabs] == [
@@ -97,7 +101,7 @@ def test_streamlit_app_has_four_tabs() -> None:
 
 
 def test_model_performance_tab_renders_documented_metrics_and_tables() -> None:
-    app = AppTest.from_file(str(APP_PATH)).run()
+    app = _run_app()
 
     performance_tab = app.tabs[2]
     metric_labels = [metric.label for metric in performance_tab.metric]
@@ -120,7 +124,7 @@ def test_model_performance_tab_renders_documented_metrics_and_tables() -> None:
 
 
 def test_methodology_tab_renders_expected_sections() -> None:
-    app = AppTest.from_file(str(APP_PATH)).run()
+    app = _run_app()
 
     methodology_tab = app.tabs[3]
     expander_labels = [expander.label for expander in methodology_tab.expander]
@@ -133,7 +137,7 @@ def test_methodology_tab_renders_expected_sections() -> None:
 
 
 def test_dashboard_hero_renders_featured_historical_forecast() -> None:
-    app = AppTest.from_file(str(APP_PATH)).run()
+    app = _run_app()
 
     assert not app.exception
     markdown = [element.value for element in app.markdown]
@@ -169,7 +173,7 @@ def test_dashboard_hero_omits_forecast_when_snapshot_is_missing(
         ),
     )
 
-    app = AppTest.from_file(str(APP_PATH)).run()
+    app = _run_app()
 
     assert not app.exception
     markdown = [element.value for element in app.markdown]
@@ -178,7 +182,7 @@ def test_dashboard_hero_omits_forecast_when_snapshot_is_missing(
 
 
 def test_replay_defaults_match_featured_series() -> None:
-    app = AppTest.from_file(str(APP_PATH)).run()
+    app = _run_app()
 
     assert not app.exception
     assert app.date_input[0].value == pd.Timestamp("2026-06-11").date()
@@ -190,7 +194,7 @@ def test_replay_defaults_match_featured_series() -> None:
 
 
 def test_dashboard_renders_semantic_notices_and_footer() -> None:
-    app = AppTest.from_file(str(APP_PATH)).run()
+    app = _run_app()
 
     assert not app.exception
     markdown = [element.value for element in app.markdown]
