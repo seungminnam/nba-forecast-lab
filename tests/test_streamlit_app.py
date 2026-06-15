@@ -11,8 +11,12 @@ from nba_forecast.models import artifacts
 APP_PATH = Path(__file__).parents[1] / "streamlit_app.py"
 
 
+def _run_app() -> AppTest:
+    return AppTest.from_file(str(APP_PATH)).run(timeout=10)
+
+
 def test_streamlit_app_renders_simulator_results() -> None:
-    app = AppTest.from_file(str(APP_PATH)).run()
+    app = _run_app()
 
     assert not app.exception
     assert [tab.label for tab in app.tabs] == [
@@ -33,7 +37,7 @@ def test_streamlit_app_renders_simulator_results() -> None:
 
 
 def test_streamlit_app_shows_distinct_team_validation_error() -> None:
-    app = AppTest.from_file(str(APP_PATH)).run()
+    app = _run_app()
 
     app.text_input[3].input("Knicks").run()
 
@@ -65,7 +69,7 @@ def test_streamlit_app_renders_actual_next_game_forecast_and_fair_odds(
         "run_series_replay",
         lambda *_: _fake_replay_output(),
     )
-    app = AppTest.from_file(str(APP_PATH)).run()
+    app = _run_app()
 
     app.button[0].click().run()
 
@@ -85,7 +89,7 @@ def test_streamlit_app_renders_actual_next_game_forecast_and_fair_odds(
 
 
 def test_streamlit_app_has_four_tabs() -> None:
-    app = AppTest.from_file(str(APP_PATH)).run()
+    app = _run_app()
 
     assert not app.exception
     assert [tab.label for tab in app.tabs] == [
@@ -97,7 +101,7 @@ def test_streamlit_app_has_four_tabs() -> None:
 
 
 def test_model_performance_tab_renders_documented_metrics_and_tables() -> None:
-    app = AppTest.from_file(str(APP_PATH)).run()
+    app = _run_app()
 
     performance_tab = app.tabs[2]
     metric_labels = [metric.label for metric in performance_tab.metric]
@@ -120,7 +124,7 @@ def test_model_performance_tab_renders_documented_metrics_and_tables() -> None:
 
 
 def test_methodology_tab_renders_expected_sections() -> None:
-    app = AppTest.from_file(str(APP_PATH)).run()
+    app = _run_app()
 
     methodology_tab = app.tabs[3]
     expander_labels = [expander.label for expander in methodology_tab.expander]
@@ -130,6 +134,77 @@ def test_methodology_tab_renders_expected_sections() -> None:
         "Leakage Prevention",
         "Model Limitations & Scope",
     ]
+
+
+def test_dashboard_hero_renders_featured_historical_forecast() -> None:
+    app = _run_app()
+
+    assert not app.exception
+    markdown = [element.value for element in app.markdown]
+    assert any("FEATURED HISTORICAL FORECAST" in value for value in markdown)
+    assert any(
+        "SAS" in value and "NYK" in value and "54.6%" in value for value in markdown
+    )
+    assert any(
+        "Frozen model Brier" in value and "0.2073" in value for value in markdown
+    )
+    assert any(
+        "Baseline Logistic Regression" in value and "3.33%" in value
+        for value in markdown
+    )
+    assert not any("LIVE FORECAST" in value for value in markdown)
+
+
+def test_dashboard_hero_omits_forecast_when_snapshot_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_exists = Path.exists
+    monkeypatch.setattr(
+        Path,
+        "exists",
+        lambda path: (
+            False
+            if str(path)
+            in {
+                "data/snapshots/2026-06-10/games.parquet",
+                "data/snapshots/2026-06-10/2026-06-11-recent5-raw.joblib",
+            }
+            else original_exists(path)
+        ),
+    )
+
+    app = _run_app()
+
+    assert not app.exception
+    markdown = [element.value for element in app.markdown]
+    assert not any("FEATURED HISTORICAL FORECAST" in value for value in markdown)
+    assert not any("Frozen model Brier" in value for value in markdown)
+
+
+def test_replay_defaults_match_featured_series() -> None:
+    app = _run_app()
+
+    assert not app.exception
+    assert app.date_input[0].value == pd.Timestamp("2026-06-11").date()
+    assert app.date_input[1].value == pd.Timestamp("2026-06-13").date()
+    assert app.text_input[0].value == "SAS"
+    assert app.text_input[1].value == "NYK"
+    assert app.number_input[0].value == 1610612759
+    assert app.number_input[1].value == 1610612752
+
+
+def test_dashboard_renders_semantic_notices_and_footer() -> None:
+    app = _run_app()
+
+    assert not app.exception
+    markdown = [element.value for element in app.markdown]
+    assert any("ℹ️" in value and "Historical Replay" in value for value in markdown)
+    assert any("⚠️" in value and "Assumption-based demo" in value for value in markdown)
+    assert any(
+        "github.com/seungminnam/nba-forecast-lab" in value
+        and "Data snapshot: 2026-06-10" in value
+        for value in markdown
+    )
 
 
 def _fake_replay_output() -> SimpleNamespace:

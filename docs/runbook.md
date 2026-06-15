@@ -290,12 +290,22 @@ accent. The injected CSS in `streamlit_app.py` is hand-tuned to match this
 palette; if either changes, update the other so the app does not mix two
 color schemes.
 
+The hero forecast is generated from the committed snapshot and the shared
+`FEATURED_SERIES` replay input. Keep the label **Featured Historical
+Forecast** and its cutoff disclosure unless the app gains an automated,
+verified current-data refresh. Do not relabel the card as live merely because
+the dashboard itself is deployed.
+
 ## Deploy to Streamlit Community Cloud
 
 The deployed app reads `data/snapshots/2026-06-10/games.parquet` and
 `data/snapshots/2026-06-10/2026-06-11-recent5-raw.joblib`, which are committed
 to the repository (see ADR 0004). No additional data setup is required for
 deployment.
+
+`scikit-learn` is pinned to `1.6.1`, the version used to create the committed
+model bundle. Treat that pin as part of the frozen-artifact contract: changing
+it requires rebuilding and re-verifying the model bundle before deployment.
 
 One-time manual steps (performed by the repository owner):
 

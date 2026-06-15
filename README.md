@@ -168,6 +168,13 @@ source .venv/bin/activate
 streamlit run streamlit_app.py
 ```
 
+The first screen features the verified pre-Game 5 SAS-NYK replay forecast so
+the core product is visible before any interaction. It is explicitly labeled
+**Featured Historical Forecast** because it is reproduced from the frozen
+June 10-11, 2026 snapshot; it is not a live prediction. The displayed frozen
+model Brier Score and the earlier Logistic Regression improvement over Elo are
+separate measured results and are presented as separate badges.
+
 The app provides four tabs:
 
 - **Model-Backed Historical Replay:** reconstructs an observed playoff series
