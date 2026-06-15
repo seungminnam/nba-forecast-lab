@@ -65,7 +65,8 @@ season into the playoffs.
 - Explicit season holdouts and comparable probability baseline metrics
 - Auditable `as_of_date` scheduled-matchup prediction workflow
 - Model-backed playoff-series Historical Replay at arbitrary cutoffs
-- Interactive Historical Replay and assumption-based Simulator Lab
+- Interactive Dashboard UI: Historical Replay, Assumption Lab, Model
+  Performance, and Methodology tabs
 
 ## Measured Baseline Result
 
