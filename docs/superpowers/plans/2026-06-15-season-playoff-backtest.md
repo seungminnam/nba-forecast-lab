@@ -63,4 +63,4 @@ and probability metrics services
 - [x] Run `.venv/bin/pytest -q`.
 - [x] Run `git diff --check`.
 - [x] Confirm generated artifacts and `.omc/` remain untracked.
-- [ ] Commit, push, and open a Draft PR.
+- [x] Commit, push, and open a Draft PR.
