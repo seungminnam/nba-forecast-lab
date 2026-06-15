@@ -173,7 +173,7 @@ git commit -m "feat: define prediction registry contract"
 - Modify: `tests/application/test_prediction_registry.py`
 - Modify: `src/nba_forecast/application/prediction_registry.py`
 
-- [ ] **Step 1: Write failing registration tests**
+- [x] **Step 1: Write failing registration tests**
 
 Test the wished-for API:
 
@@ -193,7 +193,7 @@ Also assert that:
 - another timestamp is preserved as another row
 - another model version is preserved as another row
 
-- [ ] **Step 2: Run the registration tests and verify RED**
+- [x] **Step 2: Run the registration tests and verify RED**
 
 Run:
 
@@ -203,7 +203,7 @@ Run:
 
 Expected: failure because `register_prediction` is missing.
 
-- [ ] **Step 3: Implement idempotent registration**
+- [x] **Step 3: Implement idempotent registration**
 
 Add:
 
@@ -226,7 +226,7 @@ fingerprint. Raise on an existing identity with a different fingerprint.
 Otherwise append exactly one validated record and sort deterministically by
 `prediction_timestamp`, `game_id`, and `prediction_id`.
 
-- [ ] **Step 4: Write failing settlement and immutability tests**
+- [x] **Step 4: Write failing settlement and immutability tests**
 
 Register two predictions, provide one matching completed canonical game, and
 assert:
@@ -257,7 +257,7 @@ Add cases proving:
 - a conflicting existing outcome raises
 - unmatched predictions remain entirely unsettled
 
-- [ ] **Step 5: Run settlement tests and verify RED**
+- [x] **Step 5: Run settlement tests and verify RED**
 
 Run:
 
@@ -267,7 +267,7 @@ Run:
 
 Expected: failure because `settle_predictions` is missing.
 
-- [ ] **Step 6: Implement minimal settlement**
+- [x] **Step 6: Implement minimal settlement**
 
 Add:
 
@@ -292,7 +292,7 @@ Call `validate_games(completed_games)` before matching by `game_id`. Verify both
 team IDs for every match. Populate all settlement fields together and never
 assign to `IMMUTABLE_REGISTRY_COLUMNS`. Validate the result before returning.
 
-- [ ] **Step 7: Run domain tests and verify GREEN**
+- [x] **Step 7: Run domain tests and verify GREEN**
 
 Run:
 
@@ -302,7 +302,7 @@ Run:
 
 Expected: all registry domain tests pass.
 
-- [ ] **Step 8: Commit Task 2**
+- [x] **Step 8: Commit Task 2**
 
 ```bash
 git add src/nba_forecast/application/prediction_registry.py \

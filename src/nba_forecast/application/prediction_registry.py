@@ -3,11 +3,14 @@
 import hashlib
 import json
 import math
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any
 
 import pandas as pd
 
 from nba_forecast.application.matchup_prediction import MatchupPredictionOutput
+from nba_forecast.data.validate import validate_games
 
 REGISTRY_COLUMNS = (
     "prediction_id",
@@ -36,6 +39,25 @@ REGISTRY_COLUMNS = (
 
 IMMUTABLE_REGISTRY_COLUMNS = REGISTRY_COLUMNS[:18]
 SETTLEMENT_COLUMNS = REGISTRY_COLUMNS[18:]
+
+
+@dataclass(frozen=True)
+class RegistrationResult:
+    """Result of attempting to append one immutable prediction event."""
+
+    registry: pd.DataFrame
+    status: str
+    prediction_id: str
+
+
+@dataclass(frozen=True)
+class SettlementResult:
+    """Registry plus counts describing one result-settlement pass."""
+
+    registry: pd.DataFrame
+    settled_count: int
+    already_settled_count: int
+    unmatched_count: int
 
 
 def empty_prediction_registry() -> pd.DataFrame:
@@ -147,6 +169,118 @@ def validate_prediction_registry(registry: pd.DataFrame) -> None:
         raise ValueError("brier_contribution must be between zero and one")
     for value in settled["settled_at"]:
         _utc_timestamp(value)
+
+
+def register_prediction(
+    registry: pd.DataFrame,
+    prediction: MatchupPredictionOutput,
+) -> RegistrationResult:
+    """Append one prediction event without overwriting existing evidence."""
+    validate_prediction_registry(registry)
+    record = prediction_to_record(prediction)
+    prediction_id = str(record["prediction_id"])
+    existing = registry.loc[registry["prediction_id"] == prediction_id]
+    if not existing.empty:
+        if existing.iloc[0]["payload_fingerprint"] != record["payload_fingerprint"]:
+            raise ValueError(
+                "Prediction identity already exists with a conflicting payload"
+            )
+        return RegistrationResult(
+            registry=registry,
+            status="already_registered",
+            prediction_id=prediction_id,
+        )
+
+    record_frame = pd.DataFrame([record], columns=REGISTRY_COLUMNS)
+    appended = (
+        record_frame
+        if registry.empty
+        else pd.concat([registry, record_frame], ignore_index=True)
+    ).sort_values(
+        ["prediction_timestamp", "game_id", "prediction_id"],
+        ignore_index=True,
+    )
+    validate_prediction_registry(appended)
+    return RegistrationResult(
+        registry=appended,
+        status="registered",
+        prediction_id=prediction_id,
+    )
+
+
+def settle_predictions(
+    registry: pd.DataFrame,
+    completed_games: pd.DataFrame,
+    *,
+    settled_at: Any = None,
+) -> SettlementResult:
+    """Attach canonical completed-game outcomes without changing predictions."""
+    validate_prediction_registry(registry)
+    validate_games(completed_games)
+    settlement_timestamp = _utc_timestamp(
+        settled_at or datetime.now(timezone.utc)
+    )
+    games_by_id = completed_games.set_index("game_id", drop=False)
+    settled_registry = registry.copy(deep=True)
+    settled_registry["settled_at"] = pd.to_datetime(
+        settled_registry["settled_at"],
+        utc=True,
+    )
+    settled_count = 0
+    already_settled_count = 0
+    unmatched_count = 0
+
+    for index, prediction in settled_registry.iterrows():
+        game_id = prediction["game_id"]
+        if game_id not in games_by_id.index:
+            unmatched_count += 1
+            continue
+        game = games_by_id.loc[game_id]
+        _validate_matching_game_identity(prediction, game)
+        outcome = int(game["home_win"])
+        if not pd.isna(prediction["final_outcome"]):
+            if int(prediction["final_outcome"]) != outcome:
+                raise ValueError(
+                    f"Prediction {prediction['prediction_id']} "
+                    "has a conflicting outcome"
+                )
+            already_settled_count += 1
+            continue
+
+        probability = float(prediction["home_win_probability"])
+        settled_registry.at[index, "final_outcome"] = outcome
+        settled_registry.at[index, "settled_at"] = settlement_timestamp
+        settled_registry.at[index, "brier_contribution"] = (
+            probability - outcome
+        ) ** 2
+        settled_registry.at[index, "is_correct"] = int(
+            (probability >= 0.5) == bool(outcome)
+        )
+        settled_count += 1
+
+    validate_prediction_registry(settled_registry)
+    return SettlementResult(
+        registry=settled_registry,
+        settled_count=settled_count,
+        already_settled_count=already_settled_count,
+        unmatched_count=unmatched_count,
+    )
+
+
+def _validate_matching_game_identity(
+    prediction: pd.Series,
+    game: pd.Series,
+) -> None:
+    fields = (
+        "home_team_id",
+        "away_team_id",
+        "home_team_abbreviation",
+        "away_team_abbreviation",
+    )
+    if any(prediction[field] != game[field] for field in fields):
+        raise ValueError(
+            f"Prediction {prediction['prediction_id']} has a team identity mismatch"
+        )
 
 
 def _utc_timestamp(value: Any) -> pd.Timestamp:
