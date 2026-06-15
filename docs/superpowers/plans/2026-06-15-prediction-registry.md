@@ -316,7 +316,7 @@ git commit -m "feat: register and settle predictions"
 - Modify: `tests/application/test_prediction_registry.py`
 - Modify: `src/nba_forecast/application/prediction_registry.py`
 
-- [ ] **Step 1: Write failing report tests**
+- [x] **Step 1: Write failing report tests**
 
 Test empty, unsettled-only, settled single-class, and settled multi-model
 registries:
@@ -339,7 +339,7 @@ Assert that each metrics row includes `predictions`, `brier_score`,
 empty or unsettled-only registry, metrics is an empty table with the stable
 schema. For a settled single-class group, `roc_auc` is `NaN`.
 
-- [ ] **Step 2: Run report tests and verify RED**
+- [x] **Step 2: Run report tests and verify RED**
 
 Run:
 
@@ -349,7 +349,7 @@ Run:
 
 Expected: failure because `build_prediction_registry_report` is missing.
 
-- [ ] **Step 3: Implement report generation**
+- [x] **Step 3: Implement report generation**
 
 Add:
 
@@ -369,7 +369,7 @@ Validate the registry, filter settled rows, and reuse `probability_metrics`.
 Create one aggregate row and deterministic model-version rows. Do not infer
 performance from unsettled predictions.
 
-- [ ] **Step 4: Run domain tests and verify GREEN**
+- [x] **Step 4: Run domain tests and verify GREEN**
 
 Run:
 
@@ -379,7 +379,7 @@ Run:
 
 Expected: all domain tests pass.
 
-- [ ] **Step 5: Commit Task 3**
+- [x] **Step 5: Commit Task 3**
 
 ```bash
 git add src/nba_forecast/application/prediction_registry.py \

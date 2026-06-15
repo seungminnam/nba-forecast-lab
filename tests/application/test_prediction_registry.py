@@ -7,6 +7,7 @@ import pytest
 from nba_forecast.application.matchup_prediction import MatchupPredictionOutput
 from nba_forecast.application.prediction_registry import (
     IMMUTABLE_REGISTRY_COLUMNS,
+    build_prediction_registry_report,
     empty_prediction_registry,
     prediction_to_record,
     register_prediction,
@@ -216,6 +217,55 @@ def test_settle_predictions_rejects_team_and_outcome_conflicts() -> None:
         settle_predictions(settled, conflicting_outcome)
 
 
+def test_build_prediction_registry_report_separates_counts_and_model_metrics() -> None:
+    report = build_prediction_registry_report(_registry_for_report())
+
+    assert report.summary.to_dict("records") == [
+        {
+            "total_predictions": 3,
+            "settled_predictions": 2,
+            "unsettled_predictions": 1,
+        }
+    ]
+    assert report.metrics["scope"].tolist() == [
+        "all_models",
+        "model:model-a",
+        "model:model-b",
+    ]
+    assert report.metrics["predictions"].tolist() == [2, 1, 1]
+    assert report.metrics.iloc[0]["brier_score"] == pytest.approx(
+        ((0.6 - 1) ** 2 + (0.4 - 0) ** 2) / 2
+    )
+    assert pd.isna(report.metrics.iloc[1]["roc_auc"])
+
+
+def test_build_prediction_registry_report_handles_no_settled_predictions() -> None:
+    empty_report = build_prediction_registry_report(empty_prediction_registry())
+    unsettled = register_prediction(
+        empty_prediction_registry(),
+        _prediction(),
+    ).registry
+    unsettled_report = build_prediction_registry_report(unsettled)
+
+    assert empty_report.summary.iloc[0].to_dict() == {
+        "total_predictions": 0,
+        "settled_predictions": 0,
+        "unsettled_predictions": 0,
+    }
+    assert empty_report.metrics.empty
+    assert unsettled_report.metrics.empty
+    assert empty_report.metrics.columns.tolist() == [
+        "scope",
+        "model_version",
+        "predictions",
+        "brier_score",
+        "log_loss",
+        "expected_calibration_error",
+        "roc_auc",
+        "accuracy",
+    ]
+
+
 def _prediction() -> MatchupPredictionOutput:
     return MatchupPredictionOutput(
         matchup=ScheduledMatchup(
@@ -271,3 +321,30 @@ def _completed_games() -> pd.DataFrame:
             }
         ]
     )
+
+
+def _registry_for_report() -> pd.DataFrame:
+    first = _prediction()
+    second = replace(
+        _prediction(),
+        matchup=replace(_prediction().matchup, game_id="scheduled-2"),
+        model_version="model-b",
+        home_win_probability=0.4,
+        away_win_probability=0.6,
+    )
+    third = replace(
+        _prediction(),
+        matchup=replace(_prediction().matchup, game_id="scheduled-3"),
+        prediction_timestamp=datetime(2026, 10, 20, 13, tzinfo=timezone.utc),
+    )
+    registry = empty_prediction_registry()
+    for prediction in (first, second, third):
+        registry = register_prediction(registry, prediction).registry
+
+    first_game = _completed_games().iloc[0].to_dict()
+    second_game = {**first_game, "game_id": "scheduled-2", "home_win": 0}
+    return settle_predictions(
+        registry,
+        pd.DataFrame([first_game, second_game]),
+        settled_at=datetime(2026, 10, 22, 23, tzinfo=timezone.utc),
+    ).registry

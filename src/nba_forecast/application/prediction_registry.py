@@ -11,6 +11,7 @@ import pandas as pd
 
 from nba_forecast.application.matchup_prediction import MatchupPredictionOutput
 from nba_forecast.data.validate import validate_games
+from nba_forecast.evaluation.metrics import probability_metrics
 
 REGISTRY_COLUMNS = (
     "prediction_id",
@@ -39,6 +40,16 @@ REGISTRY_COLUMNS = (
 
 IMMUTABLE_REGISTRY_COLUMNS = REGISTRY_COLUMNS[:18]
 SETTLEMENT_COLUMNS = REGISTRY_COLUMNS[18:]
+REPORT_METRIC_COLUMNS = (
+    "scope",
+    "model_version",
+    "predictions",
+    "brier_score",
+    "log_loss",
+    "expected_calibration_error",
+    "roc_auc",
+    "accuracy",
+)
 
 
 @dataclass(frozen=True)
@@ -58,6 +69,14 @@ class SettlementResult:
     settled_count: int
     already_settled_count: int
     unmatched_count: int
+
+
+@dataclass(frozen=True)
+class PredictionRegistryReport:
+    """Operating counts and settled-only probability metrics."""
+
+    summary: pd.DataFrame
+    metrics: pd.DataFrame
 
 
 def empty_prediction_registry() -> pd.DataFrame:
@@ -265,6 +284,63 @@ def settle_predictions(
         already_settled_count=already_settled_count,
         unmatched_count=unmatched_count,
     )
+
+
+def build_prediction_registry_report(
+    registry: pd.DataFrame,
+) -> PredictionRegistryReport:
+    """Report operating counts and metrics from settled predictions only."""
+    validate_prediction_registry(registry)
+    settled = registry.loc[registry["final_outcome"].notna()]
+    summary = pd.DataFrame(
+        [
+            {
+                "total_predictions": len(registry),
+                "settled_predictions": len(settled),
+                "unsettled_predictions": len(registry) - len(settled),
+            }
+        ]
+    )
+    if settled.empty:
+        return PredictionRegistryReport(
+            summary=summary,
+            metrics=pd.DataFrame(columns=REPORT_METRIC_COLUMNS),
+        )
+
+    rows = [_metrics_row(settled, scope="all_models", model_version="all")]
+    for model_version in sorted(settled["model_version"].unique()):
+        model_predictions = settled.loc[
+            settled["model_version"] == model_version
+        ]
+        rows.append(
+            _metrics_row(
+                model_predictions,
+                scope=f"model:{model_version}",
+                model_version=str(model_version),
+            )
+        )
+    return PredictionRegistryReport(
+        summary=summary,
+        metrics=pd.DataFrame(rows, columns=REPORT_METRIC_COLUMNS),
+    )
+
+
+def _metrics_row(
+    predictions: pd.DataFrame,
+    *,
+    scope: str,
+    model_version: str,
+) -> dict[str, object]:
+    metrics = probability_metrics(
+        predictions["final_outcome"].astype(int).tolist(),
+        predictions["home_win_probability"].astype(float).tolist(),
+    )
+    return {
+        "scope": scope,
+        "model_version": model_version,
+        "predictions": len(predictions),
+        **metrics,
+    }
 
 
 def _validate_matching_game_identity(
