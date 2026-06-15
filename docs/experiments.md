@@ -216,7 +216,7 @@ validation-based recent-five selection. Future feature-group experiments must
 use new validation or walk-forward evidence rather than repeatedly optimizing
 against this final test season.
 
-## Planned Season-Agnostic Playoff Backtest
+## Season-Agnostic Playoff Backtest
 
 **Pre-registered:** 2026-06-15
 
@@ -279,3 +279,43 @@ winner before each game, winner accuracy at declared cutoffs, and predicted
 versus observed final length. During future playoffs, the same workflow will
 write immutable pre-game prediction records and attach outcomes only after
 games finish.
+
+### 2025-26 Measured Results
+
+**Run date:** 2026-06-15
+
+**Games:** 85 completed playoff games from April 18 through June 13, 2026
+
+**Frozen model:** `2026-06-11-recent5-raw`
+
+| Brier Score | Log Loss | ECE | ROC-AUC | Accuracy |
+|---:|---:|---:|---:|---:|
+| **0.221755** | **0.635268** | **0.082080** | **0.672452** | **0.635294** |
+
+For context, the same frozen model's untouched 2025-26 regular-season test
+produced a Brier Score of `0.207254`, Log Loss of `0.601983`, ECE of
+`0.039914`, ROC-AUC of `0.732116`, and Accuracy of `0.689431`.
+
+The playoff Brier Score was approximately `7.0%` worse and Log Loss was
+approximately `5.5%` worse. ECE increased by approximately `0.0422`, while
+ROC-AUC and Accuracy declined by approximately `0.0597` and `0.0541`
+respectively.
+
+### Interpretation
+
+The pre-experiment hypothesis was supported. The frozen model retained some
+ranking and classification signal, but its probabilities generalized less
+reliably to the playoff population. The average predicted home-win probability
+was `55.32%`, closely matching the observed playoff home-win rate of `55.29%`,
+but the higher ECE shows that agreement in the overall mean did not translate
+to reliable calibration across probability buckets.
+
+The result does not establish why performance worsened. Plausible explanations
+include stronger and more closely matched teams, playoff rotation changes,
+injuries, and the current absence of player availability features. Those are
+future hypotheses, not conclusions from this backtest.
+
+The 2025-26 playoff backtest is now evaluation evidence and must not be used to
+select a revised model and then reported again as an unbiased result. Future
+changes require validation on earlier playoff seasons or forward evaluation
+on 2026-27 and later playoffs.

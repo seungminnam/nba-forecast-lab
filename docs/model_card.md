@@ -41,6 +41,20 @@ selection. Its result was not used to revise those decisions.
 ECE is the weighted average absolute gap between predicted probability and
 observed win rate across ten probability bins.
 
+## Playoff Generalization Backtest
+
+The frozen model was replayed chronologically across all 85 completed 2025-26
+playoff games without changing the model after observing playoff results:
+
+| Brier Score | Log Loss | ECE | ROC-AUC | Accuracy |
+|---:|---:|---:|---:|---:|
+| **0.221755** | **0.635268** | **0.082080** | **0.672452** | **0.635294** |
+
+This is measured playoff generalization evidence, not a new model-selection
+period. Probability quality and calibration were worse than the regular-season
+final test. The 2025-26 playoff results must not be used to select a revised
+model and then reported again as unbiased evidence.
+
 ## Intended Use
 
 - Historical pre-game probability replay
@@ -52,14 +66,14 @@ observed win rate across ten probability bins.
 
 ## Limitations
 
-- Trained and evaluated on regular-season team-level games only; current
-  playoff inference uses the same features with completed playoff history but
-  has no measured playoff-accuracy claim
+- Trained and selected on regular-season team-level games; the measured
+  2025-26 playoff backtest showed worse probability quality and calibration
+  than the regular-season final test
 - Continuous playoff inference sends season-to-date features such as
   `games_played` beyond their regular-season training range, so probability
   calibration may drift during later playoff rounds
-- The verified local processed history ends on June 10, 2026 and includes 84
-  completed 2025-26 playoff games
+- The verified local processed history ends on June 13, 2026 and includes all
+  85 completed 2025-26 playoff games
 - The current refresh does not include Play-In tournament games, so a
   Play-In qualifier's first-round state would omit those completed games
 - Historical Replay freezes two venue probabilities at the cutoff and does

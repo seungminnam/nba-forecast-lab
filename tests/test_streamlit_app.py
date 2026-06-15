@@ -117,6 +117,7 @@ def test_model_performance_tab_renders_documented_metrics_and_tables() -> None:
 
     expander_labels = [expander.label for expander in performance_tab.expander]
     assert expander_labels == [
+        "Regular Season vs Playoffs (Frozen Model)",
         "Baseline Comparison (Untouched 2025-26 Test)",
         "Training Window & Model Comparison (2024-25 Validation)",
         "Calibration Selection (2024-25 Validation, Second Half)",

@@ -58,13 +58,14 @@ season into the playoffs.
 - Offline fixture build and network-free automated tests
 - Live source smoke test: 2,460 NBA Stats team rows transformed into 1,230
   canonical 2025-26 regular-season games
-- Live playoff refresh: 168 NBA Stats team rows transformed into 84 completed
-  2025-26 playoff games through June 10, 2026
+- Live playoff refresh: 170 NBA Stats team rows transformed into all 85
+  completed 2025-26 playoff games through June 13, 2026
 - Regular-season-to-playoff rolling-state and Elo continuity
 - Shifted rolling team state and sequential pre-game Elo
 - Explicit season holdouts and comparable probability baseline metrics
 - Auditable `as_of_date` scheduled-matchup prediction workflow
 - Model-backed playoff-series Historical Replay at arbitrary cutoffs
+- Season-agnostic chronological playoff backtest and prediction-level reports
 - Interactive Dashboard UI: Historical Replay, Assumption Lab, Model
   Performance, and Methodology tabs
 
@@ -176,6 +177,27 @@ The single-game Brier Score was `0.2978`; one game's score is descriptive and
 is not a measured playoff-accuracy claim. The actual outcome is stored
 separately from the June 10-11 frozen forecast snapshot, preserving the
 point-in-time contract.
+
+### 2025-26 Playoff Backtest
+
+The frozen `2026-06-11-recent5-raw` model was replayed chronologically across
+all `85` completed 2025-26 playoff games. Each game was scored using only
+history strictly before its game date, then joined to its result:
+
+| Evaluation | Games | Brier Score | Log Loss | ECE | ROC-AUC | Accuracy |
+|---|---:|---:|---:|---:|---:|---:|
+| 2025-26 regular-season final test | 1,230 | **0.2073** | **0.6020** | **0.0399** | **0.7321** | **0.6894** |
+| 2025-26 playoff backtest | 85 | 0.2218 | 0.6353 | 0.0821 | 0.6725 | 0.6353 |
+
+The playoff Brier Score was approximately `7.0%` worse, and calibration error
+increased. This supports the pre-registered expectation that a
+regular-season-selected model would remain directionally useful but
+generalize less reliably to the smaller, stronger, and differently managed
+playoff population.
+
+The 2025-26 playoff result is now evaluation evidence. It may motivate future
+features, but it cannot be reused as unbiased evidence after selecting changes
+against it.
 
 ## Dashboard UI
 
