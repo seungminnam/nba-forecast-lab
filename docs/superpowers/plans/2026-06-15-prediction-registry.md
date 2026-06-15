@@ -48,7 +48,7 @@ rules.
 - Create: `tests/application/test_prediction_registry.py`
 - Create: `src/nba_forecast/application/prediction_registry.py`
 
-- [ ] **Step 1: Write failing tests for deterministic record creation and validation**
+- [x] **Step 1: Write failing tests for deterministic record creation and validation**
 
 Create a small `MatchupPredictionOutput` fixture with a fixed UTC timestamp and
 assert:
@@ -77,7 +77,7 @@ and expected failures for duplicate `prediction_id`, probability values outside
 `[0, 1]`, probabilities that do not sum to one, naive timestamps, malformed
 feature JSON, and partially populated settlement fields.
 
-- [ ] **Step 2: Run the focused tests and verify RED**
+- [x] **Step 2: Run the focused tests and verify RED**
 
 Run:
 
@@ -88,7 +88,7 @@ Run:
 Expected: collection fails because
 `nba_forecast.application.prediction_registry` does not exist.
 
-- [ ] **Step 3: Implement the minimal schema and record conversion**
+- [x] **Step 3: Implement the minimal schema and record conversion**
 
 Define:
 
@@ -149,7 +149,7 @@ Validation must reject:
 - settlement fields that are only partially populated
 - settled outcomes outside `{0, 1}`
 
-- [ ] **Step 4: Run focused tests and verify GREEN**
+- [x] **Step 4: Run focused tests and verify GREEN**
 
 Run:
 
@@ -159,7 +159,7 @@ Run:
 
 Expected: record-conversion and validation tests pass.
 
-- [ ] **Step 5: Commit Task 1**
+- [x] **Step 5: Commit Task 1**
 
 ```bash
 git add src/nba_forecast/application/prediction_registry.py \
