@@ -7,7 +7,7 @@ name = "nba-forecast-lab"
 version = "0.1.0"
 description = "Leakage-safe NBA game probability forecasting and playoff simulation"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.9,!=3.9.7"
 dependencies = [
   "duckdb>=1.1,<2",
   "joblib>=1.4,<2",
