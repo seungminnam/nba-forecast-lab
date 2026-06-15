@@ -135,6 +135,28 @@ Stored matchup prediction reports include a UTC prediction timestamp,
 `as_of_date`, game identifier, model version, feature version, home and away
 probabilities, the exact feature values used, and a nullable final outcome.
 
+## Forward Prediction Registry
+
+One registry row represents one immutable prediction event. The logical event
+identity is `game_id + model_version + prediction_timestamp`.
+
+| Column | Mutability | Meaning |
+|---|---|---|
+| `prediction_id` | Immutable | SHA-256 identity for the logical event |
+| `payload_fingerprint` | Immutable | SHA-256 fingerprint of all immutable evidence |
+| `prediction_timestamp`, `as_of_date` | Immutable | UTC forecast time and permitted history cutoff |
+| `game_id`, `game_date`, season fields | Immutable | Scheduled-game context |
+| home and away team fields | Immutable | Recorded matchup identity |
+| `model_version`, `feature_version` | Immutable | Scoring contracts |
+| home and away win probabilities | Immutable | Complementary model probabilities |
+| `features_json` | Immutable | Canonical JSON exact feature snapshot |
+| `final_outcome` | Settlement-only | Observed canonical home-win indicator |
+| `settled_at` | Settlement-only | UTC result attachment time |
+| `brier_contribution`, `is_correct` | Settlement-only | Per-event evaluation values |
+
+All settlement fields are either null together or populated together. Result
+settlement cannot modify any immutable column.
+
 ## Historical Series Replay Report
 
 The replay report stores the cutoff, next-game date, observed games and score,

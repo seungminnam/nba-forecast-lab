@@ -580,7 +580,7 @@ git commit -m "feat: add prediction registry commands"
 - Modify: `.gitignore`
 - Modify: `tests/test_project_config.py`
 
-- [ ] **Step 1: Add the architecture decision record**
+- [x] **Step 1: Add the architecture decision record**
 
 Document:
 
@@ -589,7 +589,7 @@ Document:
 - why hosted storage and automation are deferred
 - consequences of preserving multiple prediction timestamps
 
-- [ ] **Step 2: Add a failing repository-hygiene test and exclude local registry artifacts**
+- [x] **Step 2: Add a failing repository-hygiene test and exclude local registry artifacts**
 
 Extend `tests/test_project_config.py` with:
 
@@ -616,7 +616,7 @@ data/registry/
 
 to `.gitignore`, then rerun the focused test and expect it to pass.
 
-- [ ] **Step 3: Update public and operational documentation**
+- [x] **Step 3: Update public and operational documentation**
 
 Add:
 
@@ -629,7 +629,7 @@ Add:
 State explicitly that this is a manual local operating workflow, not yet a live
 daily automated service.
 
-- [ ] **Step 4: Run a local smoke workflow**
+- [x] **Step 4: Run a local smoke workflow**
 
 Using a test or local model bundle and canonical games:
 
@@ -644,7 +644,7 @@ Using a test or local model bundle and canonical games:
 Record only verified behavior in documentation. Do not commit generated
 registry artifacts.
 
-- [ ] **Step 5: Run full verification**
+- [x] **Step 5: Run full verification**
 
 Run:
 
@@ -657,7 +657,7 @@ git diff --check
 
 Expected: all checks pass.
 
-- [ ] **Step 6: Commit Task 6**
+- [x] **Step 6: Commit Task 6**
 
 ```bash
 git add .gitignore README.md docs/architecture.md docs/data_dictionary.md \
