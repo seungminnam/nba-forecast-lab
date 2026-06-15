@@ -30,6 +30,9 @@ dev = [
 [project.scripts]
 nba-forecast = "nba_forecast.cli:main"
 
+[tool.poetry]
+packages = [{ include = "nba_forecast", from = "src" }]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
