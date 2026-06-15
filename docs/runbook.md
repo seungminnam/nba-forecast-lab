@@ -303,6 +303,10 @@ The deployed app reads `data/snapshots/2026-06-10/games.parquet` and
 to the repository (see ADR 0004). No additional data setup is required for
 deployment.
 
+`scikit-learn` is pinned to `1.6.1`, the version used to create the committed
+model bundle. Treat that pin as part of the frozen-artifact contract: changing
+it requires rebuilding and re-verifying the model bundle before deployment.
+
 One-time manual steps (performed by the repository owner):
 
 1. Sign in at <https://share.streamlit.io> with the GitHub account that owns
