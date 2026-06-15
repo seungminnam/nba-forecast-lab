@@ -5,7 +5,6 @@ from typing import Optional
 import pandas as pd
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from xgboost import XGBClassifier
 
 from nba_forecast.features.game_features import MODEL_FEATURE_COLUMNS
 from nba_forecast.models.baselines import PROBABILITY_EPSILON
@@ -17,6 +16,8 @@ def fit_xgboost(
     sample_weight: Optional[pd.Series] = None,
 ) -> Pipeline:
     """Fit a fixed-configuration XGBoost model on declared model features."""
+    from xgboost import XGBClassifier
+
     model = Pipeline(
         [
             ("imputer", SimpleImputer(strategy="median")),
