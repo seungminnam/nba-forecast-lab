@@ -184,6 +184,34 @@ remains model-independent.
 The odds transform does not call a model, improve probability quality, or
 consume market prices.
 
+## Season Playoff Backtest Flow
+
+```text
+canonical games + season_key + one frozen model bundle
+        |
+        v
+select completed playoff games and sort chronologically
+        |
+        v
+for each game: build scheduled matchup at game_date cutoff
+        |
+        v
+predict from history strictly before game_date
+        |
+        v
+attach observed outcome after prediction
+        |
+        +--> prediction-level CSV
+        |
+        +--> aggregate Brier, Log Loss, ECE, ROC-AUC, Accuracy JSON
+```
+
+`application/playoff_backtest.py` owns season selection, chronological
+orchestration, outcome attachment, and aggregate metrics. It delegates feature
+construction and scoring to the same `predict_scheduled_matchup` workflow used
+for forward predictions. No team or date constants are required, so the same
+service can evaluate later playoff seasons.
+
 ## Model Performance and Methodology Tabs
 
 ```text

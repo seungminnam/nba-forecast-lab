@@ -57,3 +57,16 @@ def test_calibration_selection_retains_raw() -> None:
     raw = report.calibration_selection.iloc[0]
     assert raw["Brier Score"] == pytest.approx(0.201537)
     assert raw["ECE"] == pytest.approx(0.032448)
+
+
+def test_evaluation_comparison_includes_measured_playoff_backtest() -> None:
+    report = build_model_performance_report()
+
+    assert report.evaluation_comparison["Evaluation"].tolist() == [
+        "2025-26 Regular Season",
+        "2025-26 Playoffs",
+    ]
+    playoffs = report.evaluation_comparison.iloc[1]
+    assert playoffs["Games"] == 85
+    assert playoffs["Brier Score"] == pytest.approx(0.221755)
+    assert playoffs["ECE"] == pytest.approx(0.082080)

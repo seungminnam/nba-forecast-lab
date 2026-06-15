@@ -263,8 +263,53 @@ Score of approximately `0.2978`.
 
 Do not compare that single-game value directly with the frozen model's
 regular-season Brier Score of `0.2073`. A meaningful playoff performance claim
-requires the planned season-wide chronological backtest documented in
-`docs/experiments.md`.
+requires the season-wide chronological backtest documented in
+`docs/experiments.md`; that measured result is reproduced below.
+
+## Backtest a Complete Playoff Season
+
+Refresh the completed playoff source and rebuild local processed games:
+
+```bash
+nba-forecast fetch-games \
+  --season 2025-26 \
+  --season-type Playoffs \
+  --cache-dir data/raw \
+  --force
+
+nba-forecast build-games \
+  --raw-csv data/raw/nba_stats/league_game_finder/*/*.csv \
+  --output-dir data
+```
+
+Do not replace `data/snapshots/2026-06-10/`; it remains the frozen deployment
+snapshot for reproducing the pre-Game-5 forecast.
+
+Run a season-agnostic chronological playoff backtest:
+
+```bash
+nba-forecast backtest-playoffs \
+  --games-parquet data/processed/games.parquet \
+  --model-bundle artifacts/models/2026-06-11-recent5-raw.joblib \
+  --season-key 2025-26 \
+  --season-id 42025 \
+  --output-dir .
+```
+
+The command writes:
+
+- `artifacts/reports/playoff_backtest_predictions.csv`
+- `artifacts/reports/playoff_backtest_metrics.json`
+
+The prediction table contains one row per completed playoff game with its
+point-in-time probability, observed outcome, Brier contribution, and model
+version. The verified 2025-26 run contains `85` games and produced a Brier
+Score of `0.221755`.
+
+The current implementation rebuilds point-in-time features independently for
+every game. This favors correctness and reuse of the established leakage-safe
+path over runtime optimization. A future daily prediction registry can
+incrementally persist team state instead of replaying the entire history.
 
 ## Run a Seeded Series Simulation
 

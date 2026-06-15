@@ -15,6 +15,7 @@ class ModelPerformanceReport:
     """Documented frozen-model and experiment-history tables."""
 
     final_metrics: pd.DataFrame
+    evaluation_comparison: pd.DataFrame
     baseline_comparison: pd.DataFrame
     training_window_comparison: pd.DataFrame
     calibration_selection: pd.DataFrame
@@ -31,6 +32,28 @@ def build_model_performance_report() -> ModelPerformanceReport:
                 "ROC-AUC": 0.732116,
                 "Accuracy": 0.689431,
             }
+        ]
+    )
+    evaluation_comparison = pd.DataFrame(
+        [
+            {
+                "Evaluation": "2025-26 Regular Season",
+                "Games": 1230,
+                "Brier Score": 0.207254,
+                "Log Loss": 0.601983,
+                "ECE": 0.039914,
+                "ROC-AUC": 0.732116,
+                "Accuracy": 0.689431,
+            },
+            {
+                "Evaluation": "2025-26 Playoffs",
+                "Games": 85,
+                "Brier Score": 0.221755,
+                "Log Loss": 0.635268,
+                "ECE": 0.082080,
+                "ROC-AUC": 0.672452,
+                "Accuracy": 0.635294,
+            },
         ]
     )
 
@@ -157,6 +180,7 @@ def build_model_performance_report() -> ModelPerformanceReport:
 
     return ModelPerformanceReport(
         final_metrics=final_metrics,
+        evaluation_comparison=evaluation_comparison,
         baseline_comparison=baseline_comparison,
         training_window_comparison=training_window_comparison,
         calibration_selection=calibration_selection,

@@ -614,6 +614,15 @@ with performance_tab:
     final_metrics[3].metric("ROC-AUC", f"{final['ROC-AUC']:.4f}")
     final_metrics[4].metric("Accuracy", f"{final['Accuracy']:.4f}")
 
+    with st.expander("Regular Season vs Playoffs (Frozen Model)"):
+        st.dataframe(report.evaluation_comparison, hide_index=True, width="stretch")
+        st.caption(
+            "The chronological 85-game playoff backtest produced a 7.0% worse "
+            "Brier Score and higher calibration error than the regular-season "
+            "final test. The frozen model was not changed after observing this "
+            "result."
+        )
+
     with st.expander("Baseline Comparison (Untouched 2025-26 Test)"):
         st.dataframe(report.baseline_comparison, hide_index=True, width="stretch")
         st.caption(
@@ -695,8 +704,8 @@ mutation-based regression tests.
     with st.expander("Model Limitations & Scope"):
         st.markdown(
             """
-- Trained and evaluated on regular-season games; playoff inference uses the
-  same features but has no measured playoff-accuracy claim.
+- Trained and selected on regular-season games; the measured 85-game playoff
+  backtest showed worse probability quality and calibration.
 - Does not include injuries, player availability, travel, or roster
   continuity.
 - Model-implied fair odds are a deterministic probability transform, not

@@ -396,6 +396,70 @@ def test_replay_series_command_writes_model_backed_json_report(tmp_path: Path) -
     assert report["result"]["simulations"] == 100
 
 
+def test_backtest_playoffs_command_writes_prediction_and_metrics_reports(
+    tmp_path: Path,
+) -> None:
+    rows = pd.read_csv(
+        FIXTURE_PATH,
+        dtype={"GAME_ID": "string", "SEASON_ID": "string"},
+    )
+    regular_path = _write_contextual_raw_csv(
+        rows.loc[rows["GAME_ID"] == "0022500001"],
+        tmp_path / "regular.csv",
+        season="2025-26",
+    )
+    playoff_path = _write_contextual_raw_csv(
+        rows.loc[rows["GAME_ID"] == "0022500002"].assign(SEASON_ID="42025"),
+        tmp_path / "playoffs.csv",
+        season="2025-26",
+        season_type="Playoffs",
+    )
+    assert (
+        main(
+            [
+                "build-games",
+                "--raw-csv",
+                str(regular_path),
+                str(playoff_path),
+                "--output-dir",
+                str(tmp_path),
+            ]
+        )
+        == 0
+    )
+    bundle_path = tmp_path / "model.joblib"
+    _write_test_bundle(bundle_path)
+
+    exit_code = main(
+        [
+            "backtest-playoffs",
+            "--games-parquet",
+            str(tmp_path / "processed" / "games.parquet"),
+            "--model-bundle",
+            str(bundle_path),
+            "--season-key",
+            "2025-26",
+            "--season-id",
+            "42025",
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+
+    report_dir = tmp_path / "artifacts" / "reports"
+    metrics = json.loads((report_dir / "playoff_backtest_metrics.json").read_text())
+    predictions = pd.read_csv(
+        report_dir / "playoff_backtest_predictions.csv",
+        dtype={"game_id": "string"},
+    )
+    assert exit_code == 0
+    assert metrics["season_key"] == "2025-26"
+    assert metrics["games"] == 1
+    assert metrics["model_version"] == "cli-test-raw"
+    assert predictions["game_id"].tolist() == ["0022500002"]
+    assert "brier_contribution" in predictions
+
+
 def _write_test_bundle(path: Path) -> None:
     rows = 20
     frame = pd.DataFrame(

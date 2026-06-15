@@ -9,6 +9,10 @@ from typing import Optional
 import pandas as pd
 
 from nba_forecast.application.matchup_prediction import predict_scheduled_matchup
+from nba_forecast.application.playoff_backtest import (
+    PlayoffBacktestInput,
+    run_playoff_backtest,
+)
 from nba_forecast.application.series_replay import SeriesReplayInput, run_series_replay
 from nba_forecast.application.simulator_lab import SimulatorLabInput, run_simulator_lab
 from nba_forecast.config import HISTORICAL_SEASONS, RAW_DATA_DIR
@@ -97,6 +101,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             args.team_b_abbreviation,
             args.simulations,
             args.seed,
+            args.output_dir,
+        )
+    if args.command == "backtest-playoffs":
+        return _backtest_playoffs(
+            args.games_parquet,
+            args.model_bundle,
+            args.season_key,
+            args.season_id,
             args.output_dir,
         )
 
@@ -213,6 +225,16 @@ def _build_parser() -> argparse.ArgumentParser:
     replay_parser.add_argument("--simulations", type=int, default=10_000)
     replay_parser.add_argument("--seed", type=int, default=2026)
     replay_parser.add_argument("--output-dir", type=Path, required=True)
+
+    backtest_parser = subparsers.add_parser(
+        "backtest-playoffs",
+        help="Chronologically evaluate a frozen model on one playoff season.",
+    )
+    backtest_parser.add_argument("--games-parquet", type=Path, required=True)
+    backtest_parser.add_argument("--model-bundle", type=Path, required=True)
+    backtest_parser.add_argument("--season-key", required=True)
+    backtest_parser.add_argument("--season-id", required=True)
+    backtest_parser.add_argument("--output-dir", type=Path, required=True)
 
     return parser
 
@@ -420,6 +442,33 @@ def _replay_series(
     report_path = report_dir / "model_backed_series_replay.json"
     report_path.write_text(json.dumps(output.to_report(), indent=2, sort_keys=True))
     print(f"Wrote model-backed series replay report to {report_path}")
+    return 0
+
+
+def _backtest_playoffs(
+    games_parquet: Path,
+    model_bundle: Path,
+    season_key: str,
+    season_id: str,
+    output_dir: Path,
+) -> int:
+    output = run_playoff_backtest(
+        pd.read_parquet(games_parquet),
+        PlayoffBacktestInput(season_key=season_key, season_id=season_id),
+        load_model_bundle(model_bundle),
+    )
+    report_dir = output_dir / "artifacts" / "reports"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    prediction_path = report_dir / "playoff_backtest_predictions.csv"
+    metrics_path = report_dir / "playoff_backtest_metrics.json"
+    output.predictions.to_csv(prediction_path, index=False)
+    metrics_path.write_text(
+        json.dumps(output.metrics_report(), indent=2, sort_keys=True)
+    )
+    print(
+        f"Wrote {len(output.predictions)} playoff predictions to {prediction_path} "
+        f"and aggregate metrics to {metrics_path}"
+    )
     return 0
 
 
