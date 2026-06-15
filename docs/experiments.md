@@ -215,3 +215,67 @@ That difference is retained rather than using the test result to reverse the
 validation-based recent-five selection. Future feature-group experiments must
 use new validation or walk-forward evidence rather than repeatedly optimizing
 against this final test season.
+
+## Planned Season-Agnostic Playoff Backtest
+
+**Pre-registered:** 2026-06-15
+
+**First evaluation season:** 2025-26 playoffs
+
+**Future operational target:** 2026-27 playoffs and later seasons
+
+### Pre-Experiment Hypothesis
+
+The frozen regular-season-selected model is expected to remain directionally
+useful during the playoffs, but its Brier Score and calibration are expected
+to worsen relative to the untouched 2025-26 regular-season test. Playoff teams
+are stronger and more closely matched, rotations change, and the current
+feature set does not model injuries, player availability, or playoff-specific
+rotation changes.
+
+The model is expected to provide more stable series probabilities than
+single-game winner picks because a best-of-seven simulation aggregates
+multiple uncertain game probabilities. This is a hypothesis, not a measured
+result.
+
+### Temporal and Reuse Contract
+
+The backtest will accept a `season_key` rather than hard-coded 2026 teams or
+dates. For each completed playoff game, it will:
+
+1. generate the forecast using only games with `game_date < as_of_date`;
+2. persist the forecast before reading the game result;
+3. join the result after prediction creation;
+4. evaluate game probabilities separately from series probabilities.
+
+The 2025-26 playoffs are the first measured replay. Results may motivate future
+features, but the same 2025-26 playoff results cannot then be reused as an
+unbiased evaluation of those changes. Later model changes require
+walk-forward evidence on later seasons.
+
+### Planned Metrics and Slices
+
+Primary game-level metrics:
+
+- Brier Score
+- Log Loss
+- Expected Calibration Error
+
+Secondary metrics:
+
+- ROC-AUC
+- Accuracy
+
+Planned slices:
+
+- playoff round;
+- home and away;
+- probability bucket;
+- elimination and non-elimination games;
+- series game number.
+
+Series-level evaluation will report the probability assigned to the eventual
+winner before each game, winner accuracy at declared cutoffs, and predicted
+versus observed final length. During future playoffs, the same workflow will
+write immutable pre-game prediction records and attach outcomes only after
+games finish.
