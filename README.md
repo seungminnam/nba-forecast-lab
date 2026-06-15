@@ -14,6 +14,17 @@ until the full multi-season experiment is run.
 > win probabilities be predicted, and how can those probabilities support
 > playoff series simulations?
 
+## Live Demo
+
+The dashboard is not yet deployed. Once deployed to Streamlit Community Cloud
+(see `docs/runbook.md`), this section will link to the public app URL.
+
+The deployed app will use the frozen `data/snapshots/2026-06-10/` data and
+model snapshot (see
+[ADR 0004](docs/decisions/0004-frozen-snapshot-deployment.md)) and will not
+reflect games played after June 10-11, 2026 until manually redeployed with a
+refreshed snapshot.
+
 ## Planned Product
 
 - Leakage-safe team features and time-aware validation
@@ -54,7 +65,8 @@ season into the playoffs.
 - Explicit season holdouts and comparable probability baseline metrics
 - Auditable `as_of_date` scheduled-matchup prediction workflow
 - Model-backed playoff-series Historical Replay at arbitrary cutoffs
-- Interactive Historical Replay and assumption-based Simulator Lab
+- Interactive Dashboard UI: Historical Replay, Assumption Lab, Model
+  Performance, and Methodology tabs
 
 ## Measured Baseline Result
 
@@ -147,25 +159,31 @@ the two frozen directions. Before Game 5, the model estimated:
 Fair odds are a no-margin transformation of the displayed model probabilities.
 They are not sportsbook prices, a market-odds feed, or betting advice.
 
-## Simulator Lab UI
+## Dashboard UI
 
-The first interactive product surface is available locally:
+The interactive product surface is available locally:
 
 ```bash
 source .venv/bin/activate
 streamlit run streamlit_app.py
 ```
 
-The app provides two modes:
+The app provides four tabs:
 
 - **Model-Backed Historical Replay:** reconstructs an observed playoff series
   at a declared cutoff, displays the actual next-game forecast, and simulates
   the remaining games.
 - **Assumption Lab:** lets users edit hypothetical probabilities, simulation
   count, and random seed.
+- **Model Performance:** presents the frozen model's final test metrics and
+  the documented baseline, training-window, and calibration-selection
+  experiment tables from `docs/experiments.md`.
+- **Methodology:** summarizes the research question, architecture, leakage
+  prevention, and model limitations, linking to the full documentation.
 
-The two modes are clearly separated so manually entered assumptions are never
-presented as observed historical evidence.
+The first two tabs are clearly separated so manually entered assumptions are
+never presented as observed historical evidence. The latter two tabs are
+static and present only already-documented results.
 
 ## Development Setup
 
@@ -297,6 +315,7 @@ model remains trained and evaluated on regular-season games only.
 - [Simulator Lab UI design](docs/superpowers/specs/2026-06-11-simulator-lab-ui-design.md)
 - [Playoff data continuity design](docs/superpowers/specs/2026-06-11-playoff-data-continuity-design.md)
 - [Model-backed series replay design](docs/superpowers/specs/2026-06-11-model-backed-series-replay-design.md)
+- [Dashboard deployment and performance/methodology design](docs/superpowers/specs/2026-06-13-dashboard-deployment-design.md)
 
 ## Attribution and Limitations
 

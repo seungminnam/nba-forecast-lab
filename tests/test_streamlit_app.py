@@ -18,17 +18,18 @@ def test_streamlit_app_renders_simulator_results() -> None:
     assert [tab.label for tab in app.tabs] == [
         "Model-Backed Historical Replay",
         "Assumption Lab",
+        "Model Performance",
+        "Methodology",
     ]
     assert any("NBA FORECAST LAB" in markdown.value for markdown in app.markdown)
     assert any("Assumption-based demo" in markdown.value for markdown in app.markdown)
-    assert len(app.metric) == 3
     assert app.metric[0].label == "Knicks series win"
-    assert [subheader.value for subheader in app.subheader] == [
+    assert {
         "Replay context",
         "Series assumptions",
         "Series outcome distribution",
         "Series length distribution",
-    ]
+    }.issubset({subheader.value for subheader in app.subheader})
 
 
 def test_streamlit_app_shows_distinct_team_validation_error() -> None:
@@ -51,8 +52,8 @@ def test_streamlit_app_renders_actual_next_game_forecast_and_fair_odds(
             True
             if str(path)
             in {
-                "data/processed/games.parquet",
-                "artifacts/models/2026-06-11-recent5-raw.joblib",
+                "data/snapshots/2026-06-10/games.parquet",
+                "data/snapshots/2026-06-10/2026-06-11-recent5-raw.joblib",
             }
             else original_exists(path)
         ),
@@ -81,6 +82,54 @@ def test_streamlit_app_renders_actual_next_game_forecast_and_fair_odds(
     assert any(
         "not sportsbook prices or betting advice" in info.value for info in app.info
     )
+
+
+def test_streamlit_app_has_four_tabs() -> None:
+    app = AppTest.from_file(str(APP_PATH)).run()
+
+    assert not app.exception
+    assert [tab.label for tab in app.tabs] == [
+        "Model-Backed Historical Replay",
+        "Assumption Lab",
+        "Model Performance",
+        "Methodology",
+    ]
+
+
+def test_model_performance_tab_renders_documented_metrics_and_tables() -> None:
+    app = AppTest.from_file(str(APP_PATH)).run()
+
+    performance_tab = app.tabs[2]
+    metric_labels = [metric.label for metric in performance_tab.metric]
+    assert metric_labels == [
+        "Brier Score",
+        "Log Loss",
+        "ECE",
+        "ROC-AUC",
+        "Accuracy",
+    ]
+    assert performance_tab.metric[0].value == "0.2073"
+    assert performance_tab.metric[3].value == "0.7321"
+
+    expander_labels = [expander.label for expander in performance_tab.expander]
+    assert expander_labels == [
+        "Baseline Comparison (Untouched 2025-26 Test)",
+        "Training Window & Model Comparison (2024-25 Validation)",
+        "Calibration Selection (2024-25 Validation, Second Half)",
+    ]
+
+
+def test_methodology_tab_renders_expected_sections() -> None:
+    app = AppTest.from_file(str(APP_PATH)).run()
+
+    methodology_tab = app.tabs[3]
+    expander_labels = [expander.label for expander in methodology_tab.expander]
+    assert expander_labels == [
+        "Research Question",
+        "Architecture & Data Flow",
+        "Leakage Prevention",
+        "Model Limitations & Scope",
+    ]
 
 
 def _fake_replay_output() -> SimpleNamespace:

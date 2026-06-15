@@ -283,6 +283,36 @@ Verified locally on 2026-06-11:
 - two Vega/Altair distribution charts rendered
 - Streamlit AppTest verified default results and invalid duplicate-team input
 
+## Theme
+
+`.streamlit/config.toml` sets a monochrome dark theme with a teal (`#2DD4BF`)
+accent. The injected CSS in `streamlit_app.py` is hand-tuned to match this
+palette; if either changes, update the other so the app does not mix two
+color schemes.
+
+## Deploy to Streamlit Community Cloud
+
+The deployed app reads `data/snapshots/2026-06-10/games.parquet` and
+`data/snapshots/2026-06-10/2026-06-11-recent5-raw.joblib`, which are committed
+to the repository (see ADR 0004). No additional data setup is required for
+deployment.
+
+One-time manual steps (performed by the repository owner):
+
+1. Sign in at <https://share.streamlit.io> with the GitHub account that owns
+   this repository.
+2. Click "New app" and select this repository and the `main` branch.
+3. Set the main file path to `streamlit_app.py`.
+4. Deploy. Streamlit Community Cloud installs dependencies from
+   `pyproject.toml`.
+5. Once the app is live, add its public URL to the "Live Demo" section of
+   `README.md`.
+
+The deployed app reflects only the static `data/snapshots/2026-06-10/`
+snapshot. Refreshing it requires replacing the files under that directory with
+a newer pipeline run and redeploying; this is a manual step until Phase 6
+automation exists.
+
 ## Failure Recovery
 
 - If NBA Stats is unavailable, retain and use the existing raw cache.

@@ -6,12 +6,13 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
+from nba_forecast.application.model_performance import build_model_performance_report
 from nba_forecast.application.series_replay import SeriesReplayInput, run_series_replay
 from nba_forecast.application.simulator_lab import SimulatorLabInput, run_simulator_lab
 from nba_forecast.models.artifacts import load_model_bundle
 
-GAMES_PATH = Path("data/processed/games.parquet")
-MODEL_PATH = Path("artifacts/models/2026-06-11-recent5-raw.joblib")
+GAMES_PATH = Path("data/snapshots/2026-06-10/games.parquet")
+MODEL_PATH = Path("data/snapshots/2026-06-10/2026-06-11-recent5-raw.joblib")
 
 st.set_page_config(
     page_title="NBA Forecast Lab",
@@ -22,22 +23,22 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    .stApp { background: #07111f; color: #f7fafc; }
-    [data-testid="stHeader"] { background: rgba(7, 17, 31, 0.82); }
+    .stApp { background: #0E1117; color: #f7fafc; }
+    [data-testid="stHeader"] { background: rgba(14, 17, 23, 0.82); }
     [data-testid="stMetric"] {
-        background: linear-gradient(145deg, #10233d, #0c192b);
-        border: 1px solid #284463;
+        background: linear-gradient(145deg, #1C2128, #161A1F);
+        border: 1px solid #2A3038;
         border-radius: 16px;
         padding: 18px;
     }
     .hero {
         padding: 24px 28px;
         border-radius: 20px;
-        background: linear-gradient(120deg, #102a4c, #0b1728 65%);
-        border: 1px solid #31577e;
+        background: linear-gradient(120deg, #1C2128, #0E1117 65%);
+        border: 1px solid #2A3038;
         margin-bottom: 18px;
     }
-    .eyebrow { color: #70b7ff; font-weight: 700; letter-spacing: .12em; }
+    .eyebrow { color: #2DD4BF; font-weight: 700; letter-spacing: .12em; }
     .notice {
         background: #261d0c;
         border: 1px solid #75561d;
@@ -63,8 +64,13 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-replay_tab, assumption_tab = st.tabs(
-    ["Model-Backed Historical Replay", "Assumption Lab"]
+replay_tab, assumption_tab, performance_tab, methodology_tab = st.tabs(
+    [
+        "Model-Backed Historical Replay",
+        "Assumption Lab",
+        "Model Performance",
+        "Methodology",
+    ]
 )
 
 
@@ -76,7 +82,7 @@ def _render_charts(
 ) -> None:
     team_colors = alt.Scale(
         domain=[team_a, team_b],
-        range=["#4ba3ff", "#ff9f43"],
+        range=["#2DD4BF", "#A78BFA"],
     )
     charts = st.columns(2)
     with charts[0]:
@@ -105,7 +111,7 @@ def _render_charts(
         st.subheader("Series length distribution")
         length_chart = (
             alt.Chart(length_table)
-            .mark_bar(color="#70b7ff", cornerRadiusEnd=4)
+            .mark_bar(color="#2DD4BF", cornerRadiusEnd=4)
             .encode(
                 x=alt.X("games:O", title="Games"),
                 y=alt.Y(
@@ -378,5 +384,122 @@ with assumption_tab:
 
             This tab uses your explicit probability assumptions and does not
             reconstruct observed history.
+            """
+        )
+
+with performance_tab:
+    st.markdown(
+        """
+        <div class="notice"><strong>Model Performance.</strong> These tables
+        mirror the documented experiment history in
+        <code>docs/experiments.md</code> and the frozen model card in
+        <code>docs/model_card.md</code>. No new evaluation is computed here.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    report = build_model_performance_report()
+    final = report.final_metrics.iloc[0]
+
+    st.subheader("Frozen Model: Final 2025-26 Test Result")
+    final_metrics = st.columns(5)
+    final_metrics[0].metric("Brier Score", f"{final['Brier Score']:.4f}")
+    final_metrics[1].metric("Log Loss", f"{final['Log Loss']:.4f}")
+    final_metrics[2].metric("ECE", f"{final['ECE']:.4f}")
+    final_metrics[3].metric("ROC-AUC", f"{final['ROC-AUC']:.4f}")
+    final_metrics[4].metric("Accuracy", f"{final['Accuracy']:.4f}")
+
+    with st.expander("Baseline Comparison (Untouched 2025-26 Test)"):
+        st.dataframe(report.baseline_comparison, hide_index=True, width="stretch")
+        st.caption(
+            "Logistic Regression reduced Brier Score by 3.33% versus Elo on "
+            "the untouched 2025-26 regular season."
+        )
+
+    with st.expander("Training Window & Model Comparison (2024-25 Validation)"):
+        st.dataframe(
+            report.training_window_comparison, hide_index=True, width="stretch"
+        )
+        st.caption(
+            "Recent-five Logistic Regression was selected for calibration: "
+            "the lowest validation Brier Score and Log Loss across all "
+            "compared windows and model classes."
+        )
+
+    with st.expander("Calibration Selection (2024-25 Validation, Second Half)"):
+        st.dataframe(
+            report.calibration_selection, hide_index=True, width="stretch"
+        )
+        st.caption(
+            "Raw probabilities were retained: both Platt and Isotonic "
+            "calibration worsened Brier Score and Log Loss on the later "
+            "validation half."
+        )
+
+with methodology_tab:
+    st.markdown(
+        """
+        <div class="notice"><strong>Methodology.</strong> These summaries link
+        to the full documentation; nothing here changes the frozen model or
+        its measured results.</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.expander("Research Question"):
+        st.markdown(
+            """
+> Using only information available before tip-off, how accurately can NBA
+> game win probabilities be predicted, and how can those probabilities
+> support playoff series simulations?
+
+See `README.md` for the full project overview.
+            """
+        )
+
+    with st.expander("Architecture & Data Flow"):
+        st.markdown(
+            """
+```text
+NBA Stats raw cache -> canonical games -> point-in-time features
+    -> frozen model bundle -> best-of-seven simulation
+```
+
+Historical Replay scores both possible home/away venue directions once at the
+declared cutoff and freezes those probabilities for the remaining-series
+simulation. See `docs/architecture.md` for the full component diagrams.
+            """
+        )
+
+    with st.expander("Leakage Prevention"):
+        st.markdown(
+            """
+**Core rule:** every model feature for a game must be reproducible using
+information available before that game's tip-off.
+
+- Team state is shifted by one game before any rolling or Elo aggregation.
+- Rolling windows (5/10/20 games) remain null until enough prior games exist.
+- Scheduled-matchup snapshots include only completed games with
+  `game_date < as_of_date`.
+
+See `docs/leakage_prevention.md` for the complete control list and
+mutation-based regression tests.
+            """
+        )
+
+    with st.expander("Model Limitations & Scope"):
+        st.markdown(
+            """
+- Trained and evaluated on regular-season games; playoff inference uses the
+  same features but has no measured playoff-accuracy claim.
+- Does not include injuries, player availability, travel, or roster
+  continuity.
+- Model-implied fair odds are a deterministic probability transform, not
+  sportsbook prices, market data, or betting advice.
+- This project does not provide betting advice and does not claim
+  profitability.
+
+See `docs/model_card.md` for the complete limitations list.
             """
         )

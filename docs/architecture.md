@@ -183,3 +183,20 @@ remains model-independent.
 
 The odds transform does not call a model, improve probability quality, or
 consume market prices.
+
+## Model Performance and Methodology Tabs
+
+```text
+docs/experiments.md + docs/model_card.md (documented results)
+        |
+        v
+application/model_performance.py (static constants)
+        |
+        v
+Streamlit Model Performance tab (st.metric + st.dataframe)
+```
+
+`application/model_performance.py` and the Methodology tab's static text have
+no runtime dependency on `data/snapshots/`, `data/processed/`, or
+`artifacts/models/`. Unlike Historical Replay and Assumption Lab, these two
+tabs render identically whether or not the frozen snapshot is present.
