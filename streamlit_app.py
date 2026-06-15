@@ -6,6 +6,10 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
+from nba_forecast.application.forecast_retrospective import (
+    ForecastOutcome,
+    build_forecast_retrospective,
+)
 from nba_forecast.application.model_performance import build_model_performance_report
 from nba_forecast.application.series_replay import (
     SeriesReplayInput,
@@ -31,6 +35,16 @@ FEATURED_SERIES = SeriesReplayInput(
     team_b_abbreviation="NYK",
     simulations=10_000,
     seed=2026,
+)
+FEATURED_OUTCOME = ForecastOutcome(
+    game_id="2026-finals-game-5",
+    game_date=pd.Timestamp("2026-06-13"),
+    home_team_abbreviation="SAS",
+    away_team_abbreviation="NYK",
+    home_points=90,
+    away_points=94,
+    final_team_a_wins=1,
+    final_team_b_wins=4,
 )
 
 
@@ -135,6 +149,23 @@ st.markdown(
         margin-top: 2px;
     }
     .forecast-odds { color: #A7F3D0; margin-top: 5px; }
+    .retrospective-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-top: 14px;
+    }
+    .retrospective-panel {
+        background: rgba(14, 17, 23, .62);
+        border: 1px solid #303842;
+        border-radius: 12px;
+        padding: 14px;
+    }
+    .retrospective-panel strong { color: #5EEAD4; }
+    .retrospective-interpretation {
+        color: #D1FAE5;
+        margin-top: 14px;
+    }
     .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; }
     .badge {
         background: #171C22;
@@ -179,39 +210,57 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-featured_replay = None
+featured_retrospective = None
 if GAMES_PATH.exists() and MODEL_PATH.exists():
     try:
         featured_replay = _build_featured_replay(str(GAMES_PATH), str(MODEL_PATH))
+        featured_retrospective = build_forecast_retrospective(
+            featured_replay,
+            FEATURED_OUTCOME,
+        )
     except ValueError:
-        featured_replay = None
+        featured_retrospective = None
 
-if featured_replay is not None and featured_replay.next_game_forecast is not None:
-    featured_game = featured_replay.next_game_forecast
-    featured_matchup = (
-        f"SAS vs NYK · Game {featured_game.game_number} · SAS home"
-    )
-    featured_probabilities = (
-        f"SAS {featured_game.home_win_probability:.1%} · "
-        f"NYK {featured_game.away_win_probability:.1%}"
-    )
-    featured_odds = (
-        "Model-implied fair odds · "
-        f"SAS {featured_game.home_fair_odds.decimal:.2f} / "
-        f"{_format_american_odds(featured_game.home_fair_odds.american)} · "
-        f"NYK {featured_game.away_fair_odds.decimal:.2f} / "
-        f"{_format_american_odds(featured_game.away_fair_odds.american)}"
+if featured_retrospective is not None:
+    featured_game = featured_retrospective.forecast.next_game_forecast
+    featured_result = featured_retrospective.forecast.result
+    assert featured_game is not None
+    assert featured_result is not None
+    featured_interpretation = (
+        "The game-level favorite lost, while the strongly favored series winner "
+        "won. The frozen prediction was not modified after the result."
     )
     st.markdown(
         f"""
         <div class="forecast-card">
-          <div class="forecast-label">FEATURED HISTORICAL FORECAST</div>
-          <div class="forecast-context">Frozen snapshot · 2026-06-11 cutoff</div>
-          <div class="forecast-matchup">{featured_matchup}</div>
-          <div class="forecast-probability">{featured_probabilities}</div>
-          <div class="forecast-odds">{featured_odds}</div>
+          <div class="forecast-label">2026 FINALS FORECAST RETROSPECTIVE</div>
+          <div class="forecast-context">
+            Frozen forecast cutoff · 2026-06-11 · Outcome · 2026-06-13
+          </div>
+          <div class="retrospective-grid">
+            <div class="retrospective-panel">
+              <strong>Frozen pre-Game 5 forecast</strong><br>
+              SAS {featured_game.home_win_probability:.1%} ·
+              NYK {featured_game.away_win_probability:.1%}<br>
+              NYK series win
+              {featured_result.team_b_series_win_probability:.1%}<br>
+              Expected final length {featured_result.expected_games:.2f} games
+            </div>
+            <div class="retrospective-panel">
+              <strong>Actual outcome</strong><br>
+              NYK won 94–90<br>
+              NYK won series 4–1<br>
+              Series ended in 5 games
+            </div>
+          </div>
+          <div class="retrospective-interpretation">
+            {featured_interpretation}
+          </div>
         </div>
         <div class="badge-row">
+          <span class="badge">
+            Single-game Brier {featured_retrospective.game_brier_score:.4f}
+          </span>
           <span class="badge">Frozen model Brier 0.2073</span>
           <span class="badge">
             Baseline Logistic Regression vs Elo Brier improvement 3.33%

@@ -238,6 +238,34 @@ Historical Replay does not model future box-score-driven team-state changes,
 injuries, momentum, or elimination-game psychology. Use the Assumption Lab
 for explicitly hypothetical probability inputs.
 
+## Interpret the 2026 Finals Forecast Retrospective
+
+Run the dashboard:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+The hero joins the frozen pre-Game-5 replay to a separate verified outcome
+record:
+
+| Forecast evidence | Observed result |
+|---|---|
+| SAS Game 5 win `54.57%` | NYK won `94-90` |
+| NYK series win `86.21%` | NYK won series `4-1` |
+| expected final length `5.80` | series ended in `5` games |
+
+The Game 5 result is not added to
+`data/snapshots/2026-06-10/games.parquet`. That snapshot must remain frozen so
+the pre-Game-5 forecast can be reproduced. The retrospective builder validates
+the separate outcome record and calculates a descriptive single-game Brier
+Score of approximately `0.2978`.
+
+Do not compare that single-game value directly with the frozen model's
+regular-season Brier Score of `0.2073`. A meaningful playoff performance claim
+requires the planned season-wide chronological backtest documented in
+`docs/experiments.md`.
+
 ## Run a Seeded Series Simulation
 
 Run a model-independent engine check with a synthetic probability provider:

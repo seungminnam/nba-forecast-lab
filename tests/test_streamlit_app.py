@@ -136,14 +136,31 @@ def test_methodology_tab_renders_expected_sections() -> None:
     ]
 
 
-def test_dashboard_hero_renders_featured_historical_forecast() -> None:
+def test_dashboard_hero_renders_finals_forecast_retrospective() -> None:
     app = _run_app()
 
     assert not app.exception
     markdown = [element.value for element in app.markdown]
-    assert any("FEATURED HISTORICAL FORECAST" in value for value in markdown)
+    assert any("2026 FINALS FORECAST RETROSPECTIVE" in value for value in markdown)
     assert any(
-        "SAS" in value and "NYK" in value and "54.6%" in value for value in markdown
+        "Frozen pre-Game 5 forecast" in value
+        and "SAS 54.6%" in value
+        and "NYK 45.4%" in value
+        for value in markdown
+    )
+    assert any(
+        "Actual outcome" in value
+        and "NYK won 94–90" in value
+        and "NYK won series 4–1" in value
+        for value in markdown
+    )
+    assert any(
+        "game-level favorite lost" in value
+        and "series winner won" in value
+        for value in markdown
+    )
+    assert any(
+        "Single-game Brier" in value and "0.2978" in value for value in markdown
     )
     assert any(
         "Frozen model Brier" in value and "0.2073" in value for value in markdown
@@ -177,7 +194,7 @@ def test_dashboard_hero_omits_forecast_when_snapshot_is_missing(
 
     assert not app.exception
     markdown = [element.value for element in app.markdown]
-    assert not any("FEATURED HISTORICAL FORECAST" in value for value in markdown)
+    assert not any("FORECAST RETROSPECTIVE" in value for value in markdown)
     assert not any("Frozen model Brier" in value for value in markdown)
 
 
@@ -209,6 +226,10 @@ def test_dashboard_renders_semantic_notices_and_footer() -> None:
 
 def _fake_replay_output() -> SimpleNamespace:
     return SimpleNamespace(
+        inputs=SimpleNamespace(
+            team_a_abbreviation="SAS",
+            team_b_abbreviation="NYK",
+        ),
         state=SimpleNamespace(
             team_a_wins=1,
             team_b_wins=3,

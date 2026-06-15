@@ -159,6 +159,24 @@ the two frozen directions. Before Game 5, the model estimated:
 Fair odds are a no-margin transformation of the displayed model probabilities.
 They are not sportsbook prices, a market-odds feed, or betting advice.
 
+### 2026 Finals Forecast Retrospective
+
+New York won Game 5 `94-90` on June 13, 2026 and completed a `4-1` Finals
+victory. The frozen pre-Game-5 forecast is preserved rather than modified
+after the result:
+
+| Item | Frozen forecast | Actual outcome |
+|---|---:|---:|
+| Game 5 | SAS `54.57%`, NYK `45.43%` | NYK won `94-90` |
+| Series | NYK win `86.21%` | NYK won `4-1` |
+| Final length | `5.80` expected games | `5` games |
+
+The game-level favorite lost, while the strongly favored series winner won.
+The single-game Brier Score was `0.2978`; one game's score is descriptive and
+is not a measured playoff-accuracy claim. The actual outcome is stored
+separately from the June 10-11 frozen forecast snapshot, preserving the
+point-in-time contract.
+
 ## Dashboard UI
 
 The interactive product surface is available locally:
@@ -168,12 +186,11 @@ source .venv/bin/activate
 streamlit run streamlit_app.py
 ```
 
-The first screen features the verified pre-Game 5 SAS-NYK replay forecast so
-the core product is visible before any interaction. It is explicitly labeled
-**Featured Historical Forecast** because it is reproduced from the frozen
-June 10-11, 2026 snapshot; it is not a live prediction. The displayed frozen
-model Brier Score and the earlier Logistic Regression improvement over Elo are
-separate measured results and are presented as separate badges.
+The first screen presents the completed 2026 Finals as a **Forecast
+Retrospective**, placing the frozen pre-Game-5 probabilities beside the
+verified outcome. Historical Replay retains the original cutoff and defaults,
+so the forecast remains reproducible. The dashboard does not present the
+retrospective as live or treat one result as measured playoff accuracy.
 
 The app provides four tabs:
 
