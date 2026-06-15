@@ -55,4 +55,4 @@ four-tab product. No model, data, or simulation contract changes.
 - [x] Run `ruff check .`, `mypy src`, `pytest`, and `git diff --check`.
 - [x] Visually verify the local dashboard.
 - [x] Audit generated files and public claims.
-- [ ] Commit, push, and open a Draft PR.
+- [x] Commit, push, and open a Draft PR.
