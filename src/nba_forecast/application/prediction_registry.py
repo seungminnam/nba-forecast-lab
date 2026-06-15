@@ -170,6 +170,19 @@ def validate_prediction_registry(registry: pd.DataFrame) -> None:
         if not isinstance(features, dict) or _canonical_json(features) != features_json:
             raise ValueError("features_json must contain canonical JSON")
 
+    for _, record in registry.iterrows():
+        immutable_payload = _immutable_payload_from_record(record)
+        identity = {
+            key: immutable_payload[key]
+            for key in ("game_id", "model_version", "prediction_timestamp")
+        }
+        if record["prediction_id"] != _sha256(identity):
+            raise ValueError("prediction_id does not match the immutable identity")
+        if record["payload_fingerprint"] != _sha256(immutable_payload):
+            raise ValueError(
+                "payload_fingerprint does not match the immutable prediction payload"
+            )
+
     settlement_nulls = registry.loc[:, list(SETTLEMENT_COLUMNS)].isna()
     partially_settled = settlement_nulls.any(axis=1) & ~settlement_nulls.all(axis=1)
     if partially_settled.any():
@@ -363,6 +376,29 @@ def _normalize_settlement_dtypes(registry: pd.DataFrame) -> pd.DataFrame:
     registry["brier_contribution"] = registry["brier_contribution"].astype("Float64")
     registry["is_correct"] = registry["is_correct"].astype("Int64")
     return registry
+
+
+def _immutable_payload_from_record(record: pd.Series) -> dict[str, object]:
+    return {
+        "prediction_timestamp": _utc_timestamp(
+            record["prediction_timestamp"]
+        ).isoformat(),
+        "as_of_date": pd.Timestamp(record["as_of_date"]).date().isoformat(),
+        "game_id": str(record["game_id"]),
+        "game_date": pd.Timestamp(record["game_date"]).date().isoformat(),
+        "season_id": str(record["season_id"]),
+        "season_type": str(record["season_type"]),
+        "season_key": str(record["season_key"]),
+        "home_team_id": int(record["home_team_id"]),
+        "away_team_id": int(record["away_team_id"]),
+        "home_team_abbreviation": str(record["home_team_abbreviation"]),
+        "away_team_abbreviation": str(record["away_team_abbreviation"]),
+        "model_version": str(record["model_version"]),
+        "feature_version": str(record["feature_version"]),
+        "home_win_probability": float(record["home_win_probability"]),
+        "away_win_probability": float(record["away_win_probability"]),
+        "features_json": str(record["features_json"]),
+    }
 
 
 def _utc_timestamp(value: Any) -> pd.Timestamp:

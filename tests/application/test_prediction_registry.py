@@ -101,6 +101,21 @@ def test_validate_prediction_registry_rejects_schema_changes() -> None:
         validate_prediction_registry(registry.assign(unexpected="value"))
 
 
+def test_validate_prediction_registry_rejects_stale_identity_and_fingerprint() -> None:
+    registry = pd.DataFrame([prediction_to_record(_prediction())])
+
+    with pytest.raises(ValueError, match="prediction_id"):
+        validate_prediction_registry(registry.assign(game_id="changed-game"))
+
+    with pytest.raises(ValueError, match="payload_fingerprint"):
+        validate_prediction_registry(
+            registry.assign(
+                home_win_probability=0.7,
+                away_win_probability=0.3,
+            )
+        )
+
+
 def test_register_prediction_is_idempotent_for_the_same_event() -> None:
     first = register_prediction(empty_prediction_registry(), _prediction())
     repeated = register_prediction(first.registry, _prediction())
