@@ -210,7 +210,9 @@ def register_prediction(
             prediction_id=prediction_id,
         )
 
-    record_frame = pd.DataFrame([record], columns=REGISTRY_COLUMNS)
+    record_frame = _normalize_settlement_dtypes(
+        pd.DataFrame([record], columns=REGISTRY_COLUMNS)
+    )
     appended = (
         record_frame
         if registry.empty
@@ -240,11 +242,7 @@ def settle_predictions(
         settled_at or datetime.now(timezone.utc)
     )
     games_by_id = completed_games.set_index("game_id", drop=False)
-    settled_registry = registry.copy(deep=True)
-    settled_registry["settled_at"] = pd.to_datetime(
-        settled_registry["settled_at"],
-        utc=True,
-    )
+    settled_registry = _normalize_settlement_dtypes(registry.copy(deep=True))
     settled_count = 0
     already_settled_count = 0
     unmatched_count = 0
@@ -357,6 +355,14 @@ def _validate_matching_game_identity(
         raise ValueError(
             f"Prediction {prediction['prediction_id']} has a team identity mismatch"
         )
+
+
+def _normalize_settlement_dtypes(registry: pd.DataFrame) -> pd.DataFrame:
+    registry["final_outcome"] = registry["final_outcome"].astype("Int64")
+    registry["settled_at"] = pd.to_datetime(registry["settled_at"], utc=True)
+    registry["brier_contribution"] = registry["brier_contribution"].astype("Float64")
+    registry["is_correct"] = registry["is_correct"].astype("Int64")
+    return registry
 
 
 def _utc_timestamp(value: Any) -> pd.Timestamp:

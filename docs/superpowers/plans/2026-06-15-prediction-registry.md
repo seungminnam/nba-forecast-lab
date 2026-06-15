@@ -393,7 +393,7 @@ git commit -m "feat: report prediction registry performance"
 - Create: `tests/data/test_prediction_registry_storage.py`
 - Create: `src/nba_forecast/data/prediction_registry_storage.py`
 
-- [ ] **Step 1: Write failing storage tests**
+- [x] **Step 1: Write failing storage tests**
 
 Test:
 
@@ -411,7 +411,7 @@ Query DuckDB and assert its `predictions` rows match the Parquet rows. Also
 assert invalid data fails before either artifact changes and that an existing
 Parquet file remains intact after the rejected write.
 
-- [ ] **Step 2: Run storage tests and verify RED**
+- [x] **Step 2: Run storage tests and verify RED**
 
 Run:
 
@@ -422,7 +422,7 @@ Run:
 Expected: collection fails because
 `nba_forecast.data.prediction_registry_storage` does not exist.
 
-- [ ] **Step 3: Implement storage adapter**
+- [x] **Step 3: Implement storage adapter**
 
 Add:
 
@@ -446,7 +446,7 @@ Validate before writing, write `predictions.parquet.tmp`, atomically replace
 the Parquet artifact, then `CREATE OR REPLACE TABLE predictions` in DuckDB.
 Validate the loaded Parquet table before returning it.
 
-- [ ] **Step 4: Run storage tests and verify GREEN**
+- [x] **Step 4: Run storage tests and verify GREEN**
 
 Run:
 
@@ -456,7 +456,7 @@ Run:
 
 Expected: all storage tests pass.
 
-- [ ] **Step 5: Commit Task 4**
+- [x] **Step 5: Commit Task 4**
 
 ```bash
 git add src/nba_forecast/data/prediction_registry_storage.py \
