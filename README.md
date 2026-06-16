@@ -247,6 +247,9 @@ nba-forecast predict-daily \
 The daily batch keeps one shared prediction timestamp, requires exactly one
 schedule snapshot, excludes postponed, conditional, unconfirmed, started, and
 past-tipoff rows, and writes the registry only after the full batch succeeds.
+The Streamlit dashboard can inspect generated daily reports in the **Daily
+Forecasts** tab. The tab is read-only: it does not fetch schedules, score new
+games, update the registry, or call a hosted service.
 
 This is not a live automated service yet. GitHub Actions scheduling, hosted
 persistence, automatic settlement, and deployed daily views remain separate
@@ -272,8 +275,11 @@ verified outcome. Historical Replay retains the original cutoff and defaults,
 so the forecast remains reproducible. The dashboard does not present the
 retrospective as live or treat one result as measured playoff accuracy.
 
-The app provides four tabs:
+The app provides five tabs:
 
+- **Daily Forecasts:** reads local `daily_predictions_<date>.json` reports,
+  defaults to the latest available report, and supports date-specific
+  inspection without mutating data.
 - **Model-Backed Historical Replay:** reconstructs an observed playoff series
   at a declared cutoff, displays the actual next-game forecast, and simulates
   the remaining games.
@@ -285,9 +291,10 @@ The app provides four tabs:
 - **Methodology:** summarizes the research question, architecture, leakage
   prevention, and model limitations, linking to the full documentation.
 
-The first two tabs are clearly separated so manually entered assumptions are
-never presented as observed historical evidence. The latter two tabs are
-static and present only already-documented results.
+The Daily Forecasts, Historical Replay, and Assumption Lab tabs are clearly
+separated so generated local reports, observed historical evidence, and
+manually entered assumptions are not presented as the same kind of forecast.
+The latter two tabs are static and present only already-documented results.
 
 ## Development Setup
 
