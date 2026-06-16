@@ -719,7 +719,7 @@ git commit -m "docs: add daily schedule workflow"
 **Files:**
 - Modify: `docs/superpowers/plans/2026-06-15-daily-schedule-predictions.md`
 
-- [ ] **Step 1: Review scope and repository hygiene**
+- [x] **Step 1: Review scope and repository hygiene**
 
 Confirm:
 
@@ -731,7 +731,7 @@ Confirm:
   artifacts, models, and generated reports are not staged
 - public claims say manual daily workflow, not live automation
 
-- [ ] **Step 2: Re-run final verification**
+- [x] **Step 2: Re-run final verification**
 
 Run:
 
