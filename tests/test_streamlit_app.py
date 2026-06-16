@@ -22,7 +22,7 @@ def test_streamlit_app_renders_simulator_results() -> None:
     assert not app.exception
     assert [tab.label for tab in app.tabs] == [
         "Daily Forecasts",
-        "Model-Backed Historical Replay",
+        "Series Replay",
         "Assumption Lab",
         "Model Performance",
         "Methodology",
@@ -97,7 +97,7 @@ def test_streamlit_app_has_daily_forecasts_tab_first() -> None:
     assert not app.exception
     assert [tab.label for tab in app.tabs] == [
         "Daily Forecasts",
-        "Model-Backed Historical Replay",
+        "Series Replay",
         "Assumption Lab",
         "Model Performance",
         "Methodology",
@@ -113,7 +113,7 @@ def test_daily_forecasts_tab_handles_missing_reports(
     assert not app.exception
     daily_tab = app.tabs[0]
     assert any(
-        "Manual local workflow" in markdown.value
+        "model-generated game predictions" in markdown.value
         for markdown in daily_tab.markdown
     )
     assert any(
@@ -145,7 +145,7 @@ def test_daily_forecasts_tab_renders_latest_report(
         for metric in daily_tab.metric
     )
     assert any(
-        metric.label == "Predictions" and metric.value == "1"
+        metric.label == "Games predicted" and metric.value == "1"
         for metric in daily_tab.metric
     )
     assert any("SAS at NYK" in markdown.value for markdown in daily_tab.markdown)
@@ -297,8 +297,6 @@ def test_replay_defaults_match_featured_series() -> None:
     assert app.date_input[2].value == pd.Timestamp("2026-06-13").date()
     assert app.text_input[0].value == "SAS"
     assert app.text_input[1].value == "NYK"
-    assert app.number_input[0].value == 1610612759
-    assert app.number_input[1].value == 1610612752
 
 
 def test_dashboard_renders_semantic_notices_and_footer() -> None:

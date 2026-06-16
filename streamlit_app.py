@@ -52,6 +52,18 @@ FEATURED_OUTCOME = ForecastOutcome(
     final_team_a_wins=1,
     final_team_b_wins=4,
 )
+_NBA_TEAM_IDS: dict[str, int] = {
+    "ATL": 1610612737, "BOS": 1610612738, "BKN": 1610612751,
+    "CHA": 1610612766, "CHI": 1610612741, "CLE": 1610612739,
+    "DAL": 1610612742, "DEN": 1610612743, "DET": 1610612765,
+    "GSW": 1610612744, "HOU": 1610612745, "IND": 1610612754,
+    "LAC": 1610612746, "LAL": 1610612747, "MEM": 1610612763,
+    "MIA": 1610612748, "MIL": 1610612749, "MIN": 1610612750,
+    "NOP": 1610612740, "NYK": 1610612752, "OKC": 1610612760,
+    "ORL": 1610612753, "PHI": 1610612755, "PHX": 1610612756,
+    "POR": 1610612757, "SAC": 1610612758, "SAS": 1610612759,
+    "TOR": 1610612761, "UTA": 1610612762, "WAS": 1610612764,
+}
 
 
 def _format_american_odds(odds: int) -> str:
@@ -211,10 +223,10 @@ st.markdown(
     """
     <div class="hero">
       <div class="eyebrow">NBA FORECAST LAB</div>
-      <h1>Leakage-Safe NBA Game Forecasting</h1>
-      <p>Reconstruct historical playoff series at a declared cutoff, inspect
-      calibrated game probabilities, and explore explicit best-of-seven
-      assumptions.</p>
+      <h1>NBA Game Forecasting Lab</h1>
+      <p>Game-level win probabilities built on historical NBA data. Inspect
+      frozen model predictions, replay past playoff series, and run custom
+      series simulations.</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -291,22 +303,14 @@ def _render_daily_missing_state(expected_path: Path | None = None) -> None:
 
 
 def _render_daily_report(report: DailyForecastReport) -> None:
-    st.subheader(f"Daily Forecasts · {report.prediction_date.isoformat()}")
-    st.caption(f"Report: `{report.path}`")
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Eligible games", str(report.eligible_game_count))
-    col2.metric("Predictions", str(report.prediction_count))
-    col3.metric("Excluded rows", str(report.excluded_game_count))
-    model_label = (
-        ", ".join(report.model_versions)
-        if report.model_versions
-        else "No predictions"
-    )
-    col4.metric("Model", model_label)
+    st.subheader(f"Daily Forecasts · {report.prediction_date.strftime('%B %-d, %Y')}")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Games predicted", str(report.prediction_count))
+    col2.metric("Eligible games", str(report.eligible_game_count))
+    col3.metric("Excluded", str(report.excluded_game_count))
     st.caption(
-        "Prediction timestamp: "
-        f"{report.prediction_timestamp.isoformat()} · Schedule snapshot: "
-        f"{report.schedule_snapshot_at_utc.isoformat()}"
+        f"Predicted {report.prediction_timestamp.strftime('%B %-d, %Y')} · "
+        f"Schedule snapshot {report.schedule_snapshot_at_utc.strftime('%B %-d, %Y')}"
     )
     if not report.games:
         st.info("No eligible games were available for this report date.")
@@ -342,9 +346,8 @@ def _render_daily_report(report: DailyForecastReport) -> None:
 def _render_daily_forecasts_tab() -> None:
     st.markdown(
         """
-        <div class="notice">ℹ️ <strong>Manual local workflow.</strong>
-        This tab reads generated local daily prediction reports. It is not a
-        live feed, not market odds, and not betting advice.</div>
+        <div class="notice">ℹ️ This tab shows model-generated game predictions.
+        It is not a live feed, not market odds, and not betting advice.</div>
         """,
         unsafe_allow_html=True,
     )
@@ -373,7 +376,7 @@ def _render_daily_forecasts_tab() -> None:
 daily_tab, replay_tab, assumption_tab, performance_tab, methodology_tab = st.tabs(
     [
         "Daily Forecasts",
-        "Model-Backed Historical Replay",
+        "Series Replay",
         "Assumption Lab",
         "Model Performance",
         "Methodology",
@@ -470,37 +473,29 @@ with replay_tab:
             value=FEATURED_SERIES.team_b_abbreviation,
             key="replay_team_b",
         )
-        team_ids = st.columns(2)
-        team_a_id = int(
-            team_ids[0].number_input(
-                "Team A ID",
-                value=FEATURED_SERIES.team_a_id,
-                step=1,
-                key="replay_team_a_id",
+        team_a_id = _NBA_TEAM_IDS.get(
+            team_a_abbreviation.upper(), FEATURED_SERIES.team_a_id
+        )
+        team_b_id = _NBA_TEAM_IDS.get(
+            team_b_abbreviation.upper(), FEATURED_SERIES.team_b_id
+        )
+        with st.expander("Advanced settings"):
+            replay_settings = st.columns(2)
+            replay_simulations = replay_settings[0].select_slider(
+                "Simulations",
+                options=[1_000, 5_000, 10_000, 25_000, 50_000],
+                value=FEATURED_SERIES.simulations,
+                key="replay_simulations",
             )
-        )
-        team_b_id = int(
-            team_ids[1].number_input(
-                "Team B ID",
-                value=FEATURED_SERIES.team_b_id,
-                step=1,
-                key="replay_team_b_id",
+            replay_seed = int(
+                replay_settings[1].number_input(
+                    "Random seed",
+                    min_value=0,
+                    value=FEATURED_SERIES.seed,
+                    step=1,
+                    key="replay_seed",
+                )
             )
-        )
-        replay_settings = st.columns(2)
-        replay_simulations = replay_settings[0].select_slider(
-            "Replay Monte Carlo simulations",
-            options=[1_000, 5_000, 10_000, 25_000, 50_000],
-            value=FEATURED_SERIES.simulations,
-        )
-        replay_seed = int(
-            replay_settings[1].number_input(
-                "Replay random seed",
-                min_value=0,
-                value=FEATURED_SERIES.seed,
-                step=1,
-            )
-        )
         run_replay = st.button("Run historical replay", type="primary")
 
     if run_replay:
@@ -643,18 +638,21 @@ with assumption_tab:
             step=0.01,
         )
 
-        settings = st.columns(2)
-        simulations = settings[0].select_slider(
-            "Monte Carlo simulations",
-            options=[1_000, 5_000, 10_000, 25_000, 50_000],
-            value=10_000,
-        )
-        seed = settings[1].number_input(
-            "Random seed",
-            min_value=0,
-            value=2026,
-            step=1,
-        )
+        with st.expander("Advanced settings"):
+            adv = st.columns(2)
+            simulations = adv[0].select_slider(
+                "Simulations",
+                options=[1_000, 5_000, 10_000, 25_000, 50_000],
+                value=10_000,
+                key="assumption_simulations",
+            )
+            seed = adv[1].number_input(
+                "Random seed",
+                min_value=0,
+                value=2026,
+                step=1,
+                key="assumption_seed",
+            )
 
     try:
         output = run_simulator_lab(
