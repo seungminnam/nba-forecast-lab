@@ -702,7 +702,7 @@ git add docs/superpowers/plans/2026-06-16-daily-forecasts-dashboard.md
 git commit -m "docs: complete daily forecasts dashboard plan"
 ```
 
-- [ ] **Step 4: Push and open Draft PR**
+- [x] **Step 4: Push and open Draft PR**
 
 Use:
 
