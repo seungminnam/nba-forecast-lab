@@ -673,7 +673,7 @@ git commit -m "docs: document daily forecasts dashboard"
 **Files:**
 - Modify: `docs/superpowers/plans/2026-06-16-daily-forecasts-dashboard.md`
 
-- [ ] **Step 1: Run full verification**
+- [x] **Step 1: Run full verification**
 
 Run:
 
@@ -686,7 +686,7 @@ git diff --check
 
 Expected: all checks pass.
 
-- [ ] **Step 2: Review scope and hygiene**
+- [x] **Step 2: Review scope and hygiene**
 
 Confirm:
 
@@ -695,7 +695,7 @@ Confirm:
 - UI copy says manual/local and not live automation.
 - Streamlit does not call schedule fetchers, model scoring, registry writes, or hosted persistence.
 
-- [ ] **Step 3: Commit final plan checkbox updates**
+- [x] **Step 3: Commit final plan checkbox updates**
 
 ```bash
 git add docs/superpowers/plans/2026-06-16-daily-forecasts-dashboard.md
