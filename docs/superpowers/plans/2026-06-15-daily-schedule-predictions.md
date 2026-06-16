@@ -159,7 +159,7 @@ git commit -m "feat: preserve schedule snapshots"
 - Create: `tests/data/test_schedule_transform.py`
 - Create: `src/nba_forecast/data/schedule_transform.py`
 
-- [ ] **Step 1: Add a source-shaped fixture**
+- [x] **Step 1: Add a source-shaped fixture**
 
 Create a fixture with:
 
@@ -177,7 +177,7 @@ ifNecessary, postponedStatus, homeTeam_teamId, homeTeam_teamTricode,
 awayTeam_teamId, awayTeam_teamTricode
 ```
 
-- [ ] **Step 2: Write failing transform and validation tests**
+- [x] **Step 2: Write failing transform and validation tests**
 
 Test the wished-for API:
 
@@ -213,7 +213,7 @@ and valid tables and rejects:
 - identical confirmed teams
 - invalid snapshot timestamps
 
-- [ ] **Step 3: Run transform tests and verify RED**
+- [x] **Step 3: Run transform tests and verify RED**
 
 Run:
 
@@ -224,7 +224,7 @@ Run:
 Expected: collection fails because
 `nba_forecast.data.schedule_transform` does not exist.
 
-- [ ] **Step 4: Implement the canonical schedule transform**
+- [x] **Step 4: Implement the canonical schedule transform**
 
 Define:
 
@@ -268,7 +268,7 @@ unknown team identities to nullable fields and derive
 `pd.to_datetime(..., utc=True, errors="coerce")`, preserve nullable tip-offs,
 and derive `nba_game_date` using `ZoneInfo("America/New_York")`.
 
-- [ ] **Step 5: Run transform tests and verify GREEN**
+- [x] **Step 5: Run transform tests and verify GREEN**
 
 Run:
 
@@ -278,7 +278,7 @@ Run:
 
 Expected: all transform and validation tests pass.
 
-- [ ] **Step 6: Commit Task 2**
+- [x] **Step 6: Commit Task 2**
 
 ```bash
 git add src/nba_forecast/data/schedule_transform.py \
