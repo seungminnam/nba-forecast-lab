@@ -631,7 +631,7 @@ git commit -m "feat: add daily schedule commands"
 - Modify: `docs/data_dictionary.md`
 - Modify: `docs/runbook.md`
 
-- [ ] **Step 1: Write a failing repository-hygiene test**
+- [x] **Step 1: Write a failing repository-hygiene test**
 
 Add:
 
@@ -650,12 +650,12 @@ Run:
 
 Expected: the new test fails.
 
-- [ ] **Step 2: Ignore local schedule artifacts and verify GREEN**
+- [x] **Step 2: Ignore local schedule artifacts and verify GREEN**
 
 Add `data/schedules/` to `.gitignore`, rerun the focused test, and expect it to
 pass.
 
-- [ ] **Step 3: Add ADR 0006**
+- [x] **Step 3: Add ADR 0006**
 
 Document:
 
@@ -664,7 +664,7 @@ Document:
 - why incomplete schedule evidence is preserved but not predicted
 - why GitHub Actions and hosted persistence remain separate
 
-- [ ] **Step 4: Update public and operational documentation**
+- [x] **Step 4: Update public and operational documentation**
 
 Add:
 
@@ -677,7 +677,7 @@ Add:
 State explicitly that the workflow is manual and local, not yet live or
 scheduled.
 
-- [ ] **Step 5: Run an offline fixture smoke workflow**
+- [x] **Step 5: Run an offline fixture smoke workflow**
 
 Using `tests/fixtures/schedule_league_v2_rows.csv` and a local test model
 bundle:
@@ -692,7 +692,7 @@ bundle:
 Use `/tmp/nba-forecast-daily-smoke` so generated artifacts remain outside Git.
 Record only verified behavior in documentation.
 
-- [ ] **Step 6: Run full verification**
+- [x] **Step 6: Run full verification**
 
 Run:
 
@@ -705,7 +705,7 @@ git diff --check
 
 Expected: all checks pass.
 
-- [ ] **Step 7: Commit Task 6**
+- [x] **Step 7: Commit Task 6**
 
 ```bash
 git add .gitignore README.md docs/architecture.md docs/data_dictionary.md \

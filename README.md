@@ -68,6 +68,8 @@ season into the playoffs.
 - Season-agnostic chronological playoff backtest and prediction-level reports
 - Immutable local Prediction Registry with idempotent registration, canonical
   result settlement, and model-version performance reports
+- Manual daily schedule discovery and once-daily batch prediction workflow
+  using immutable `ScheduleLeagueV2` snapshots
 - Interactive Dashboard UI: Historical Replay, Assumption Lab, Model
   Performance, and Methodology tabs
 
@@ -218,6 +220,37 @@ nba-forecast report-predictions \
   --registry-dir data/registry \
   --output-dir .
 ```
+
+## Manual Daily Schedule Predictions
+
+The project now has a local, manual workflow for discovering a season schedule
+and registering all eligible games on one NBA calendar date:
+
+```bash
+nba-forecast fetch-schedule \
+  --season 2026-27 \
+  --cache-dir data/raw
+
+nba-forecast build-schedule \
+  --raw-schedule-csv data/raw/nba_stats/schedule_league_v2/2026-27/<snapshot>.csv \
+  --output-dir data
+
+nba-forecast predict-daily \
+  --schedule-parquet data/schedules/scheduled_matchups.parquet \
+  --games-parquet data/processed/games.parquet \
+  --model-bundle artifacts/models/2026-06-11-recent5-raw.joblib \
+  --prediction-date 2026-10-22 \
+  --registry-dir data/registry \
+  --output-dir .
+```
+
+The daily batch keeps one shared prediction timestamp, requires exactly one
+schedule snapshot, excludes postponed, conditional, unconfirmed, started, and
+past-tipoff rows, and writes the registry only after the full batch succeeds.
+
+This is not a live automated service yet. GitHub Actions scheduling, hosted
+persistence, automatic settlement, and deployed daily views remain separate
+future milestones.
 
 Parquet is the durable registry and DuckDB is the local SQL query surface.
 This is a verified manual operating workflow, not yet a daily automated or

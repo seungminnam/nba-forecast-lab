@@ -11,3 +11,9 @@ def test_local_prediction_registry_is_gitignored() -> None:
     gitignore = (Path(__file__).parents[1] / ".gitignore").read_text().splitlines()
 
     assert "data/registry/" in gitignore
+
+
+def test_local_schedule_artifacts_are_gitignored() -> None:
+    gitignore = (Path(__file__).parents[1] / ".gitignore").read_text().splitlines()
+
+    assert "data/schedules/" in gitignore
