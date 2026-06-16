@@ -1,10 +1,13 @@
 import json
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
-from nba_forecast.cli import _predict_matchup, main
+from nba_forecast.cli import _fetch_schedule, _predict_daily, _predict_matchup, main
+from nba_forecast.data.schedule_storage import write_scheduled_matchups
+from nba_forecast.data.schedule_transform import SCHEDULED_MATCHUP_COLUMNS
 from nba_forecast.data.source_nba import raw_cache_path
 from nba_forecast.features.game_features import MODEL_FEATURE_COLUMNS
 from nba_forecast.models.artifacts import (
@@ -16,6 +19,9 @@ from nba_forecast.models.baselines import fit_logistic_regression
 from nba_forecast.models.calibration import RawCalibrator
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "team_game_rows.csv"
+SCHEDULE_FIXTURE_PATH = (
+    Path(__file__).parent / "fixtures" / "schedule_league_v2_rows.csv"
+)
 MULTI_SEASON_FIXTURE_PATH = (
     Path(__file__).parent / "fixtures" / "multi_season_team_game_rows.csv"
 )
@@ -219,6 +225,64 @@ def test_fetch_history_command_reuses_existing_season_caches(
     assert exit_code == 0
 
 
+def test_fetch_schedule_composition_writes_immutable_snapshot(
+    tmp_path: Path,
+) -> None:
+    rows = pd.read_csv(SCHEDULE_FIXTURE_PATH, dtype={"gameId": "string"})
+    fetched_at = datetime(2026, 6, 15, 12, tzinfo=timezone.utc)
+
+    snapshot = _fetch_schedule(
+        "2026-27",
+        tmp_path / "raw",
+        fetcher=lambda season: rows,
+        fetched_at=fetched_at,
+    )
+
+    assert snapshot.csv_path.exists()
+    assert snapshot.metadata_path.exists()
+    assert snapshot.csv_path.name == "20260615T120000.000000Z.csv"
+
+
+def test_build_schedule_command_creates_canonical_schedule_outputs(
+    tmp_path: Path,
+) -> None:
+    rows = pd.read_csv(SCHEDULE_FIXTURE_PATH, dtype={"gameId": "string"})
+    snapshot = _fetch_schedule(
+        "2026-27",
+        tmp_path / "raw",
+        fetcher=lambda season: rows,
+        fetched_at=datetime(2026, 6, 15, 12, tzinfo=timezone.utc),
+    )
+
+    exit_code = main(
+        [
+            "build-schedule",
+            "--raw-schedule-csv",
+            str(snapshot.csv_path),
+            "--output-dir",
+            str(tmp_path / "output"),
+        ]
+    )
+
+    schedule = pd.read_parquet(
+        tmp_path / "output" / "schedules" / "scheduled_matchups.parquet"
+    )
+    assert exit_code == 0
+    assert (tmp_path / "output" / "schedules" / "schedule.duckdb").exists()
+    assert schedule["game_id"].tolist() == [
+        "0022600001",
+        "0042600001",
+        "0042600002",
+        "0022600002",
+    ]
+    assert schedule["season_type"].tolist() == [
+        "Regular Season",
+        "Playoffs",
+        "Playoffs",
+        "Regular Season",
+    ]
+
+
 def test_simulate_series_command_writes_json_report(tmp_path: Path) -> None:
     exit_code = main(
         [
@@ -362,6 +426,123 @@ def test_predict_matchup_can_idempotently_register_a_fixed_prediction(
     registry = pd.read_parquet(tmp_path / "registry" / "predictions.parquet")
     assert len(registry) == 1
     assert (tmp_path / "registry" / "prediction_registry.duckdb").exists()
+
+
+def test_predict_daily_composition_writes_report_and_registry(
+    tmp_path: Path,
+) -> None:
+    games_path, bundle_path, schedule_path = _write_daily_prediction_inputs(tmp_path)
+    timestamp = datetime(2025, 10, 25, 12, tzinfo=timezone.utc)
+
+    exit_code = _predict_daily(
+        schedule_path,
+        games_path,
+        bundle_path,
+        prediction_date=date(2025, 10, 25),
+        registry_dir=tmp_path / "registry",
+        output_dir=tmp_path,
+        prediction_timestamp=timestamp,
+    )
+    rerun_exit_code = _predict_daily(
+        schedule_path,
+        games_path,
+        bundle_path,
+        prediction_date=date(2025, 10, 25),
+        registry_dir=tmp_path / "registry",
+        output_dir=tmp_path,
+        prediction_timestamp=timestamp,
+    )
+
+    registry = pd.read_parquet(tmp_path / "registry" / "predictions.parquet")
+    report_path = (
+        tmp_path
+        / "artifacts"
+        / "predictions"
+        / "daily_predictions_2025-10-25.json"
+    )
+    report = json.loads(report_path.read_text())
+    assert exit_code == 0
+    assert rerun_exit_code == 0
+    assert len(registry) == 1
+    assert (tmp_path / "registry" / "prediction_registry.duckdb").exists()
+    assert report["eligible_game_count"] == 1
+    assert report["predictions"][0]["matchup"]["game_id"] == "0022509999"
+
+
+def test_predict_daily_composition_handles_no_game_date(
+    tmp_path: Path,
+) -> None:
+    games_path, bundle_path, schedule_path = _write_daily_prediction_inputs(tmp_path)
+    timestamp = datetime(2025, 10, 25, 12, tzinfo=timezone.utc)
+    _predict_daily(
+        schedule_path,
+        games_path,
+        bundle_path,
+        prediction_date=date(2025, 10, 25),
+        registry_dir=tmp_path / "registry",
+        output_dir=tmp_path,
+        prediction_timestamp=timestamp,
+    )
+
+    exit_code = _predict_daily(
+        schedule_path,
+        games_path,
+        bundle_path,
+        prediction_date=date(2025, 10, 26),
+        registry_dir=tmp_path / "registry",
+        output_dir=tmp_path,
+        prediction_timestamp=timestamp,
+    )
+
+    registry = pd.read_parquet(tmp_path / "registry" / "predictions.parquet")
+    report = json.loads(
+        (
+            tmp_path
+            / "artifacts"
+            / "predictions"
+            / "daily_predictions_2025-10-26.json"
+        ).read_text()
+    )
+    assert exit_code == 0
+    assert len(registry) == 1
+    assert report["eligible_game_count"] == 0
+    assert report["predictions"] == []
+
+
+def test_predict_daily_composition_leaves_registry_unchanged_on_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    games_path, bundle_path, schedule_path = _write_daily_prediction_inputs(tmp_path)
+    timestamp = datetime(2025, 10, 25, 12, tzinfo=timezone.utc)
+    _predict_daily(
+        schedule_path,
+        games_path,
+        bundle_path,
+        prediction_date=date(2025, 10, 25),
+        registry_dir=tmp_path / "registry",
+        output_dir=tmp_path,
+        prediction_timestamp=timestamp,
+    )
+    registry_path = tmp_path / "registry" / "predictions.parquet"
+    original_bytes = registry_path.read_bytes()
+
+    def failing_batch(*args: object, **kwargs: object) -> object:
+        raise RuntimeError("daily batch failed")
+
+    monkeypatch.setattr("nba_forecast.cli.run_daily_predictions", failing_batch)
+    with pytest.raises(RuntimeError, match="daily batch failed"):
+        _predict_daily(
+            schedule_path,
+            games_path,
+            bundle_path,
+            prediction_date=date(2025, 10, 25),
+            registry_dir=tmp_path / "registry",
+            output_dir=tmp_path,
+            prediction_timestamp=timestamp,
+        )
+
+    assert registry_path.read_bytes() == original_bytes
 
 
 def test_settle_and_report_predictions_commands(tmp_path: Path) -> None:
@@ -572,6 +753,51 @@ def test_backtest_playoffs_command_writes_prediction_and_metrics_reports(
     assert metrics["model_version"] == "cli-test-raw"
     assert predictions["game_id"].tolist() == ["0022500002"]
     assert "brier_contribution" in predictions
+
+
+def _write_daily_prediction_inputs(tmp_path: Path) -> tuple[Path, Path, Path]:
+    raw_paths = _write_multi_season_raw_caches(tmp_path)
+    assert (
+        main(
+            [
+                "build-games",
+                "--raw-csv",
+                *(str(path) for path in raw_paths),
+                "--output-dir",
+                str(tmp_path),
+            ]
+        )
+        == 0
+    )
+    bundle_path = tmp_path / "model.joblib"
+    _write_test_bundle(bundle_path)
+    schedule = pd.DataFrame(
+        [
+            {
+                "game_id": "0022509999",
+                "season_id": "22025",
+                "season_type": "Regular Season",
+                "season_key": "2025-26",
+                "schedule_snapshot_at_utc": pd.Timestamp(
+                    "2025-10-24T12:00:00Z"
+                ),
+                "nba_game_date": pd.Timestamp("2025-10-25"),
+                "tipoff_at_utc": pd.Timestamp("2025-10-25T23:30:00Z"),
+                "game_status": 1,
+                "game_status_text": "7:30 pm ET",
+                "is_postponed": False,
+                "is_conditional": False,
+                "has_confirmed_matchup": True,
+                "home_team_id": 1,
+                "away_team_id": 2,
+                "home_team_abbreviation": "HOM",
+                "away_team_abbreviation": "AWY",
+            }
+        ],
+        columns=SCHEDULED_MATCHUP_COLUMNS,
+    )
+    schedule_path, _ = write_scheduled_matchups(schedule, tmp_path)
+    return tmp_path / "processed" / "games.parquet", bundle_path, schedule_path
 
 
 def _write_test_bundle(path: Path) -> None:

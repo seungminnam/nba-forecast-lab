@@ -3,12 +3,13 @@
 import argparse
 import json
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Optional
 
 import pandas as pd
 
+from nba_forecast.application.daily_predictions import run_daily_predictions
 from nba_forecast.application.matchup_prediction import predict_scheduled_matchup
 from nba_forecast.application.playoff_backtest import (
     PlayoffBacktestInput,
@@ -26,10 +27,19 @@ from nba_forecast.data.prediction_registry_storage import (
     load_prediction_registry,
     write_prediction_registry,
 )
+from nba_forecast.data.schedule_storage import write_scheduled_matchups
+from nba_forecast.data.schedule_transform import schedule_rows_to_matchups
 from nba_forecast.data.source_nba import (
     load_or_fetch_history,
     load_or_fetch_team_games,
     load_raw_cache_context,
+)
+from nba_forecast.data.source_schedule import (
+    ScheduleFetcher,
+    ScheduleSnapshot,
+    fetch_schedule_snapshot,
+    load_schedule_snapshot,
+    load_schedule_snapshot_context,
 )
 from nba_forecast.data.storage import write_processed_games
 from nba_forecast.data.transform import team_rows_to_games
@@ -61,6 +71,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             args.cache_dir,
             args.force,
         )
+    if args.command == "fetch-schedule":
+        snapshot = _fetch_schedule(args.season, args.cache_dir)
+        print(f"Cached schedule snapshot at {snapshot.csv_path}")
+        return 0
+    if args.command == "build-schedule":
+        return _build_schedule(args.raw_schedule_csv, args.output_dir)
     if args.command == "build-features":
         return _build_features(args.games_parquet, args.output_dir)
     if args.command == "evaluate-baselines":
@@ -132,6 +148,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             args.registry_dir,
             args.output_dir,
         )
+    if args.command == "predict-daily":
+        return _predict_daily(
+            args.schedule_parquet,
+            args.games_parquet,
+            args.model_bundle,
+            prediction_date=args.prediction_date,
+            registry_dir=args.registry_dir,
+            output_dir=args.output_dir,
+        )
 
     parser.error(f"Unsupported command: {args.command}")
     return 2
@@ -173,6 +198,24 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     history_parser.add_argument("--cache-dir", type=Path, default=RAW_DATA_DIR)
     history_parser.add_argument("--force", action="store_true")
+
+    schedule_fetch_parser = subparsers.add_parser(
+        "fetch-schedule",
+        help="Fetch an immutable NBA schedule snapshot for one season.",
+    )
+    schedule_fetch_parser.add_argument("--season", required=True)
+    schedule_fetch_parser.add_argument("--cache-dir", type=Path, default=RAW_DATA_DIR)
+
+    schedule_build_parser = subparsers.add_parser(
+        "build-schedule",
+        help="Build canonical scheduled matchups from a raw schedule snapshot.",
+    )
+    schedule_build_parser.add_argument(
+        "--raw-schedule-csv",
+        type=Path,
+        required=True,
+    )
+    schedule_build_parser.add_argument("--output-dir", type=Path, required=True)
 
     feature_parser = subparsers.add_parser(
         "build-features",
@@ -272,6 +315,17 @@ def _build_parser() -> argparse.ArgumentParser:
     report_parser.add_argument("--registry-dir", type=Path, required=True)
     report_parser.add_argument("--output-dir", type=Path, required=True)
 
+    daily_parser = subparsers.add_parser(
+        "predict-daily",
+        help="Predict and register every eligible scheduled game on one NBA date.",
+    )
+    daily_parser.add_argument("--schedule-parquet", type=Path, required=True)
+    daily_parser.add_argument("--games-parquet", type=Path, required=True)
+    daily_parser.add_argument("--model-bundle", type=Path, required=True)
+    daily_parser.add_argument("--prediction-date", type=_parse_date, required=True)
+    daily_parser.add_argument("--registry-dir", type=Path, required=True)
+    daily_parser.add_argument("--output-dir", type=Path, required=True)
+
     return parser
 
 
@@ -332,6 +386,37 @@ def _fetch_history(
     )
     row_count = sum(len(pd.read_csv(path)) for path in paths)
     print(f"Cached {row_count} team-game rows across {len(paths)} raw files")
+    return 0
+
+
+def _fetch_schedule(
+    season: str,
+    cache_dir: Path,
+    *,
+    fetcher: Optional[ScheduleFetcher] = None,
+    fetched_at: Optional[datetime] = None,
+) -> ScheduleSnapshot:
+    return fetch_schedule_snapshot(
+        season,
+        cache_dir,
+        fetcher=fetcher,
+        fetched_at=fetched_at,
+    )
+
+
+def _build_schedule(raw_schedule_csv: Path, output_dir: Path) -> int:
+    context = load_schedule_snapshot_context(raw_schedule_csv)
+    rows = load_schedule_snapshot(raw_schedule_csv)
+    schedule = schedule_rows_to_matchups(
+        rows,
+        season_key=context.season_key,
+        schedule_snapshot_at_utc=context.fetched_at_utc,
+    )
+    parquet_path, database_path = write_scheduled_matchups(schedule, output_dir)
+    print(
+        f"Wrote {len(schedule)} scheduled matchups to {parquet_path} "
+        f"and {database_path}"
+    )
     return 0
 
 
@@ -547,6 +632,43 @@ def _report_predictions(registry_dir: Path, output_dir: Path) -> int:
     report.metrics.to_csv(metrics_path, index=False)
     print(f"Wrote prediction registry reports to {summary_path} and {metrics_path}")
     return 0
+
+
+def _predict_daily(
+    schedule_parquet: Path,
+    games_parquet: Path,
+    model_bundle: Path,
+    *,
+    prediction_date: date,
+    registry_dir: Path,
+    output_dir: Path,
+    prediction_timestamp: Optional[datetime] = None,
+) -> int:
+    timestamp = prediction_timestamp or datetime.now(timezone.utc)
+    output = run_daily_predictions(
+        pd.read_parquet(schedule_parquet),
+        pd.read_parquet(games_parquet),
+        load_prediction_registry(registry_dir),
+        load_model_bundle(model_bundle),
+        prediction_date=prediction_date,
+        prediction_timestamp=timestamp,
+    )
+    write_prediction_registry(output.registry, registry_dir)
+    prediction_dir = output_dir / "artifacts" / "predictions"
+    prediction_dir.mkdir(parents=True, exist_ok=True)
+    report_path = (
+        prediction_dir / f"daily_predictions_{prediction_date.isoformat()}.json"
+    )
+    report_path.write_text(json.dumps(output.to_report(), indent=2, sort_keys=True))
+    print(
+        f"Wrote {output.eligible_game_count} daily predictions to {report_path} "
+        f"and synchronized registry at {registry_dir}"
+    )
+    return 0
+
+
+def _parse_date(value: str) -> date:
+    return date.fromisoformat(value)
 
 
 if __name__ == "__main__":

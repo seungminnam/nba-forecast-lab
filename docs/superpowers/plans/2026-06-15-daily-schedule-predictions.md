@@ -521,7 +521,7 @@ git commit -m "feat: predict daily schedule batches"
 - Modify: `tests/test_cli.py`
 - Modify: `src/nba_forecast/cli.py`
 
-- [ ] **Step 1: Write failing fetch and build CLI tests**
+- [x] **Step 1: Write failing fetch and build CLI tests**
 
 Call the private composition functions with an injected schedule fetcher and
 fixed fetch timestamp, then use `main` for build:
@@ -544,7 +544,7 @@ exit_code = main([
 Assert immutable snapshot paths, canonical Parquet, and schedule DuckDB exist
 and contain supported regular-season and playoff rows.
 
-- [ ] **Step 2: Run fetch/build CLI tests and verify RED**
+- [x] **Step 2: Run fetch/build CLI tests and verify RED**
 
 Run:
 
@@ -554,7 +554,7 @@ Run:
 
 Expected: import or parser failure because the commands are missing.
 
-- [ ] **Step 3: Implement fetch and build composition**
+- [x] **Step 3: Implement fetch and build composition**
 
 Add:
 
@@ -567,7 +567,7 @@ Private `_fetch_schedule(..., fetcher=None, fetched_at=None)` calls only
 `fetch_schedule_snapshot`. `_build_schedule` loads snapshot rows and context,
 calls `schedule_rows_to_matchups`, and persists via `write_scheduled_matchups`.
 
-- [ ] **Step 4: Write failing predict-daily CLI tests**
+- [x] **Step 4: Write failing predict-daily CLI tests**
 
 Call private `_predict_daily(..., prediction_timestamp=fixed_timestamp)` and
 assert:
@@ -579,7 +579,7 @@ assert:
 - a no-game date writes an empty report and leaves registry rows unchanged
 - a monkeypatched batch failure leaves prior registry Parquet bytes unchanged
 
-- [ ] **Step 5: Run predict-daily CLI tests and verify RED**
+- [x] **Step 5: Run predict-daily CLI tests and verify RED**
 
 Run:
 
@@ -589,7 +589,7 @@ Run:
 
 Expected: failure because `_predict_daily` and parser support are missing.
 
-- [ ] **Step 6: Implement predict-daily composition**
+- [x] **Step 6: Implement predict-daily composition**
 
 Add:
 
@@ -603,7 +603,7 @@ UTC timestamp, calls `run_daily_predictions`, writes the complete candidate
 registry, then writes the JSON report. Do not expose a timestamp override on
 the public parser.
 
-- [ ] **Step 7: Run CLI tests and verify GREEN**
+- [x] **Step 7: Run CLI tests and verify GREEN**
 
 Run:
 
@@ -613,7 +613,7 @@ Run:
 
 Expected: all CLI tests pass.
 
-- [ ] **Step 8: Commit Task 5**
+- [x] **Step 8: Commit Task 5**
 
 ```bash
 git add src/nba_forecast/cli.py tests/test_cli.py
