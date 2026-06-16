@@ -285,15 +285,9 @@ if featured_retrospective is not None:
 
 def _render_daily_missing_state(expected_path: Path | None = None) -> None:
     if expected_path is None:
-        st.info(
-            "No daily prediction reports found. Generate one with "
-            "`nba-forecast predict-daily ... --output-dir .`."
-        )
+        st.info("No daily prediction reports are available yet.")
         return
-    st.warning(
-        f"No report found at `{expected_path}`. Generate it with "
-        "`nba-forecast predict-daily ... --prediction-date YYYY-MM-DD`."
-    )
+    st.info("No prediction report is available for the selected date.")
 
 
 def _render_daily_report(report: DailyForecastReport) -> None:
@@ -517,23 +511,24 @@ with replay_tab:
             )
         else:
             try:
-                replay_output = run_series_replay(
-                    _load_games(str(GAMES_PATH)),
-                    SeriesReplayInput(
-                        as_of_date=pd.Timestamp(as_of_date),
-                        next_game_date=pd.Timestamp(next_game_date),
-                        season_id="42025",
-                        season_type="Playoffs",
-                        season_key="2025-26",
-                        team_a_id=team_a_id,
-                        team_a_abbreviation=team_a_abbreviation,
-                        team_b_id=team_b_id,
-                        team_b_abbreviation=team_b_abbreviation,
-                        simulations=replay_simulations,
-                        seed=replay_seed,
-                    ),
-                    _load_model(str(MODEL_PATH)),
-                )
+                with st.spinner("Running simulation…"):
+                    replay_output = run_series_replay(
+                        _load_games(str(GAMES_PATH)),
+                        SeriesReplayInput(
+                            as_of_date=pd.Timestamp(as_of_date),
+                            next_game_date=pd.Timestamp(next_game_date),
+                            season_id="42025",
+                            season_type="Playoffs",
+                            season_key="2025-26",
+                            team_a_id=team_a_id,
+                            team_a_abbreviation=team_a_abbreviation,
+                            team_b_id=team_b_id,
+                            team_b_abbreviation=team_b_abbreviation,
+                            simulations=replay_simulations,
+                            seed=replay_seed,
+                        ),
+                        _load_model(str(MODEL_PATH)),
+                    )
             except ValueError as error:
                 st.error(str(error))
             else:
