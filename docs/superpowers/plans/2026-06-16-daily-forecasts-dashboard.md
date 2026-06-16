@@ -611,7 +611,7 @@ git commit -m "feat: add daily forecasts dashboard tab"
 - Modify: `docs/runbook.md`
 - Modify: `docs/architecture.md`
 
-- [ ] **Step 1: Update README**
+- [x] **Step 1: Update README**
 
 In `README.md`, under `Manual Daily Schedule Predictions`, add:
 
@@ -621,7 +621,7 @@ The Streamlit dashboard can inspect generated daily reports in the
 score games, or write registry rows.
 ```
 
-- [ ] **Step 2: Update runbook**
+- [x] **Step 2: Update runbook**
 
 In `docs/runbook.md`, after the `predict-daily` command section, add:
 
@@ -639,7 +639,7 @@ operating states, not dashboard failures.
 ```
 ```
 
-- [ ] **Step 3: Update architecture**
+- [x] **Step 3: Update architecture**
 
 In `docs/architecture.md`, under `Daily Schedule Prediction Flow`, add:
 
@@ -649,7 +649,7 @@ daily JSON reports and never calls `run_daily_predictions`, fetches NBA data,
 or writes the registry.
 ```
 
-- [ ] **Step 4: Run docs-adjacent checks**
+- [x] **Step 4: Run docs-adjacent checks**
 
 Run:
 
@@ -660,7 +660,7 @@ git diff --check
 
 Expected: all pass.
 
-- [ ] **Step 5: Commit Task 3**
+- [x] **Step 5: Commit Task 3**
 
 ```bash
 git add README.md docs/runbook.md docs/architecture.md \

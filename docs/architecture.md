@@ -274,13 +274,23 @@ predict_scheduled_matchup for each eligible row
         |
         v
 candidate registry copy -> atomic local registry write -> JSON batch report
+        |
+        v
+read-only Streamlit Daily Forecasts tab
 ```
 
 `data/source_schedule.py` owns append-only schedule snapshots.
 `data/schedule_transform.py` owns the canonical scheduled-matchup schema.
 `data/schedule_storage.py` persists validated schedule Parquet and DuckDB
 tables. `application/daily_predictions.py` owns eligibility and atomic batch
-registration. `cli.py` composes the manual workflow.
+registration. `application/daily_dashboard.py` owns read-only parsing and
+validation of generated daily JSON reports for the dashboard. `cli.py`
+composes the manual workflow.
+
+The Streamlit Daily Forecasts tab is an artifact viewer. It discovers local
+`artifacts/predictions/daily_predictions_<date>.json` reports, defaults to the
+latest report, and can inspect a selected report date. It does not fetch
+schedules, score games, update the registry, or call hosted services.
 
 The workflow is currently local and manual. It does not include GitHub Actions
-cron, hosted persistence, automatic settlement, or live Streamlit daily views.
+cron, hosted persistence, automatic settlement, or a live hosted daily feed.

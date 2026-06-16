@@ -427,6 +427,17 @@ The command writes the complete candidate registry only after every eligible
 game is scored and registered, then writes
 `artifacts/predictions/daily_predictions_<date>.json`.
 
+View generated daily reports in the local dashboard:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+Open the **Daily Forecasts** tab. It defaults to the latest
+`artifacts/predictions/daily_predictions_<date>.json` artifact and can inspect
+a specific report date. The tab is read-only; it does not fetch schedules,
+score games, update the registry, or call a hosted service.
+
 Inspect local artifacts:
 
 ```bash
