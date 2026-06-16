@@ -16,6 +16,7 @@ from nba_forecast.application.forecast_retrospective import (
     build_forecast_retrospective,
 )
 from nba_forecast.application.model_performance import build_model_performance_report
+from nba_forecast.application.season_outlook import run_season_outlook
 from nba_forecast.application.series_replay import (
     SeriesReplayInput,
     SeriesReplayOutput,
@@ -23,6 +24,7 @@ from nba_forecast.application.series_replay import (
 )
 from nba_forecast.application.simulator_lab import SimulatorLabInput, run_simulator_lab
 from nba_forecast.models.artifacts import ModelBundle, load_model_bundle
+from nba_forecast.simulation.season import SeasonOutlookResult
 
 GAMES_PATH = Path("data/snapshots/2026-06-10/games.parquet")
 MODEL_PATH = Path("data/snapshots/2026-06-10/2026-06-11-recent5-raw.joblib")
@@ -74,6 +76,44 @@ def _format_percent(value: float) -> str:
     return f"{value:.1%}"
 
 
+def _team_logo_url(abbr: str) -> str:
+    team_id = _NBA_TEAM_IDS.get(abbr.upper())
+    if team_id is None:
+        return ""
+    return f"https://cdn.nba.com/logos/nba/{team_id}/primary/L/logo.svg"
+
+
+def _outlook_html_table(projections: list, conf: str) -> str:
+    rows = []
+    for proj in projections:
+        if proj.conference != conf:
+            continue
+        logo = _team_logo_url(proj.team_abbreviation)
+        onerror = "this.style.display='none'"
+        logo_tag = (
+            f'<img src="{logo}" class="team-logo" onerror="{onerror}">'
+            if logo else ""
+        )
+        rows.append(
+            f"<tr>"
+            f"<td><div class='team-cell'>{logo_tag}"
+            f"<span>{proj.team_abbreviation}</span></div></td>"
+            f"<td>{proj.median_wins:.1f}</td>"
+            f"<td>{proj.win_low}–{proj.win_high}</td>"
+            f"<td>{proj.playoff_probability:.0%}</td>"
+            f"</tr>"
+        )
+    header = (
+        "<table class='outlook-table'>"
+        "<thead><tr>"
+        "<th>Team</th><th>Proj. W</th><th>Range</th><th>Playoff %</th>"
+        "</tr></thead>"
+        f"<tbody>{''.join(rows)}</tbody>"
+        "</table>"
+    )
+    return header
+
+
 @st.cache_data
 def _load_games(path: str) -> pd.DataFrame:
     return pd.read_parquet(path)
@@ -82,6 +122,18 @@ def _load_games(path: str) -> pd.DataFrame:
 @st.cache_resource
 def _load_model(path: str) -> ModelBundle:
     return load_model_bundle(Path(path))
+
+
+@st.cache_data
+def _run_season_outlook(
+    games_path: str, simulations: int, home_advantage: float, seed: int
+) -> SeasonOutlookResult:
+    return run_season_outlook(
+        Path(games_path),
+        simulations=simulations,
+        home_advantage=home_advantage,
+        seed=seed,
+    )
 
 
 @st.cache_resource
@@ -214,6 +266,61 @@ st.markdown(
         padding: 18px 2px 8px;
     }
     .footer a { color: #5EEAD4; text-decoration: none; }
+    .nba-topbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: linear-gradient(90deg, #C8102E 0%, #1D428A 100%);
+        padding: 9px 20px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        font-size: .78rem;
+        color: #fff;
+        font-weight: 600;
+        letter-spacing: .06em;
+    }
+    .nba-topbar span { opacity: .85; }
+    .nba-header-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 4px;
+    }
+    .nba-header-row img {
+        filter: drop-shadow(0 2px 6px rgba(0,0,0,.5));
+        flex-shrink: 0;
+    }
+    .nba-header-row h1 { margin: 2px 0 6px; }
+    .outlook-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .88rem;
+        margin-top: 4px;
+    }
+    .outlook-table th {
+        color: #9CA3AF;
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .10em;
+        padding: 6px 10px;
+        border-bottom: 1px solid #2A3038;
+        text-align: left;
+        text-transform: uppercase;
+    }
+    .outlook-table td {
+        padding: 7px 10px;
+        border-bottom: 1px solid #1C2128;
+        color: #F7FAFC;
+        vertical-align: middle;
+    }
+    .outlook-table tr:hover td { background: rgba(45,212,191,.06); }
+    .team-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+    }
+    .team-logo { width: 30px; height: 30px; object-fit: contain; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -221,9 +328,20 @@ st.markdown(
 
 st.markdown(
     """
+    <div class="nba-topbar">
+      <img src="https://cdn.nba.com/logos/leagues/logo-nba.svg" height="26"
+           onerror="this.style.display='none'">
+      <span>NBA FORECAST LAB · Fan project · not affiliated with the NBA</span>
+    </div>
     <div class="hero">
-      <div class="eyebrow">NBA FORECAST LAB</div>
-      <h1>NBA Game Forecasting Lab</h1>
+      <div class="nba-header-row">
+        <img src="https://cdn.nba.com/logos/leagues/logo-nba.svg" height="52"
+             onerror="this.style.display='none'">
+        <div>
+          <div class="eyebrow">NBA FORECAST LAB</div>
+          <h1>NBA Game Forecasting Lab</h1>
+        </div>
+      </div>
       <p>Game-level win probabilities built on historical NBA data. Inspect
       frozen model predictions, replay past playoff series, and run custom
       series simulations.</p>
@@ -373,11 +491,15 @@ def _render_daily_forecasts_tab() -> None:
         st.error(f"Daily forecast report could not be loaded: {error}")
 
 
-daily_tab, replay_tab, assumption_tab, performance_tab, methodology_tab = st.tabs(
+(
+    daily_tab, replay_tab, assumption_tab,
+    outlook_tab, performance_tab, methodology_tab,
+) = st.tabs(
     [
         "Daily Forecasts",
         "Series Replay",
         "Assumption Lab",
+        "2026-27 Outlook",
         "Model Performance",
         "Methodology",
     ]
@@ -691,6 +813,100 @@ with assumption_tab:
             reconstruct observed history.
             """
         )
+
+with outlook_tab:
+    st.markdown(
+        """
+        <div class="notice"><strong>2026-27 Season Outlook.</strong>
+        Off-season win projection using end-of-season Elo ratings and Monte Carlo
+        simulation. No roster moves, trades, or injuries are modeled — this is a
+        baseline strength estimate only.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.expander("Advanced settings"):
+        _adv = st.columns(2)
+        _outlook_sims = _adv[0].select_slider(
+            "Simulations",
+            options=[1_000, 5_000, 10_000, 25_000],
+            value=10_000,
+            key="outlook_simulations",
+        )
+        _outlook_home_adv = int(
+            _adv[1].slider(
+                "Home court advantage (Elo pts)",
+                min_value=50,
+                max_value=150,
+                value=100,
+                step=10,
+                key="outlook_home_adv",
+            )
+        )
+
+    if GAMES_PATH.exists():
+        _outlook = _run_season_outlook(
+            str(GAMES_PATH),
+            simulations=_outlook_sims,
+            home_advantage=float(_outlook_home_adv),
+            seed=2026,
+        )
+
+        east_col, west_col = st.columns(2)
+        with east_col:
+            st.subheader("Eastern Conference")
+            st.markdown(
+                _outlook_html_table(_outlook.projections, "East"),
+                unsafe_allow_html=True,
+            )
+        with west_col:
+            st.subheader("Western Conference")
+            st.markdown(
+                _outlook_html_table(_outlook.projections, "West"),
+                unsafe_allow_html=True,
+            )
+
+        _chart_data = pd.DataFrame(
+            {
+                "Team": [p.team_abbreviation for p in _outlook.projections],
+                "Projected Wins": [p.median_wins for p in _outlook.projections],
+                "Conference": [p.conference for p in _outlook.projections],
+            }
+        )
+        _outlook_chart = (
+            alt.Chart(_chart_data)
+            .mark_bar(cornerRadiusTopLeft=3, cornerRadiusTopRight=3)
+            .encode(
+                x=alt.X("Team:N", sort="-y", axis=alt.Axis(labelAngle=-45)),
+                y=alt.Y(
+                    "Projected Wins:Q",
+                    scale=alt.Scale(domain=[20, 70]),
+                    title="Projected Wins (82-game)",
+                ),
+                color=alt.Color(
+                    "Conference:N",
+                    scale=alt.Scale(
+                        domain=["East", "West"], range=["#2DD4BF", "#818CF8"]
+                    ),
+                    legend=alt.Legend(orient="top-right"),
+                ),
+                tooltip=[
+                    alt.Tooltip("Team:N"),
+                    alt.Tooltip("Projected Wins:Q", format=".1f"),
+                    alt.Tooltip("Conference:N"),
+                ],
+            )
+            .properties(height=300, title="2026-27 Projected Win Totals")
+        )
+        st.altair_chart(_dark_chart(_outlook_chart), use_container_width=True)
+
+        st.caption(
+            f"Elo-based Monte Carlo · {_outlook.simulations:,} simulations · "
+            f"Snapshot: {SNAPSHOT_DATE} · No roster changes modeled"
+        )
+    else:
+        st.info("Games snapshot not found — season outlook unavailable.")
 
 with performance_tab:
     st.markdown(
