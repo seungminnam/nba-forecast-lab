@@ -293,7 +293,7 @@ git commit -m "feat: define scheduled matchup contract"
 - Create: `tests/data/test_schedule_storage.py`
 - Create: `src/nba_forecast/data/schedule_storage.py`
 
-- [ ] **Step 1: Write failing persistence tests**
+- [x] **Step 1: Write failing persistence tests**
 
 Test:
 
@@ -309,7 +309,7 @@ Query DuckDB and assert the `scheduled_matchups` table matches Parquet.
 Attempt an invalid write after a valid write and prove the prior Parquet bytes
 remain unchanged.
 
-- [ ] **Step 2: Run storage tests and verify RED**
+- [x] **Step 2: Run storage tests and verify RED**
 
 Run:
 
@@ -320,7 +320,7 @@ Run:
 Expected: collection fails because `nba_forecast.data.schedule_storage` does
 not exist.
 
-- [ ] **Step 3: Implement schedule persistence**
+- [x] **Step 3: Implement schedule persistence**
 
 Define:
 
@@ -335,7 +335,7 @@ Validate before writing. Atomically replace
 `schedules/scheduled_matchups.parquet`, then create or replace the DuckDB
 `scheduled_matchups` table in `schedules/schedule.duckdb`.
 
-- [ ] **Step 4: Run storage tests and verify GREEN**
+- [x] **Step 4: Run storage tests and verify GREEN**
 
 Run:
 
@@ -345,7 +345,7 @@ Run:
 
 Expected: all schedule persistence tests pass.
 
-- [ ] **Step 5: Commit Task 3**
+- [x] **Step 5: Commit Task 3**
 
 ```bash
 git add src/nba_forecast/data/schedule_storage.py \

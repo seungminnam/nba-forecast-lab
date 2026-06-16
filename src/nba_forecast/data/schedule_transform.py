@@ -6,6 +6,7 @@ from datetime import timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
+import numpy as np
 import pandas as pd
 
 from nba_forecast.data.contracts import expected_season_id
@@ -112,7 +113,9 @@ def schedule_rows_to_matchups(
             }
         )
 
-    schedule = pd.DataFrame(canonical_rows, columns=SCHEDULED_MATCHUP_COLUMNS)
+    schedule = _coerce_schedule_dtypes(
+        pd.DataFrame(canonical_rows, columns=SCHEDULED_MATCHUP_COLUMNS)
+    )
     validate_scheduled_matchups(schedule)
     return schedule
 
@@ -212,7 +215,7 @@ def _validate_dates(schedule: pd.DataFrame) -> None:
 def _validate_boolean_columns(schedule: pd.DataFrame) -> None:
     for column in ("is_postponed", "is_conditional", "has_confirmed_matchup"):
         for index, value in schedule[column].items():
-            if not isinstance(value, bool):
+            if not isinstance(value, (bool, np.bool_)):
                 raise ValueError(f"{column} must contain bool values at row {index}")
 
 
@@ -256,6 +259,40 @@ def _nba_game_date(tipoff_at: pd.Timestamp | None, source_date: Any) -> pd.Times
         return tipoff_at.tz_convert(_NBA_TIMEZONE).normalize().tz_localize(None)
     parsed = pd.to_datetime(source_date, errors="raise")
     return pd.Timestamp(parsed).normalize()
+
+
+def _coerce_schedule_dtypes(schedule: pd.DataFrame) -> pd.DataFrame:
+    coerced = schedule.copy()
+    string_columns = (
+        "game_id",
+        "season_id",
+        "season_type",
+        "season_key",
+        "game_status_text",
+        "home_team_abbreviation",
+        "away_team_abbreviation",
+    )
+    for column in string_columns:
+        coerced[column] = coerced[column].astype("string")
+    coerced["schedule_snapshot_at_utc"] = pd.to_datetime(
+        coerced["schedule_snapshot_at_utc"],
+        utc=True,
+    )
+    coerced["nba_game_date"] = pd.to_datetime(
+        coerced["nba_game_date"],
+        errors="raise",
+    ).dt.normalize()
+    coerced["tipoff_at_utc"] = pd.to_datetime(
+        coerced["tipoff_at_utc"],
+        utc=True,
+        errors="coerce",
+    )
+    coerced["game_status"] = coerced["game_status"].astype("Int64")
+    for column in ("is_postponed", "is_conditional", "has_confirmed_matchup"):
+        coerced[column] = coerced[column].astype(bool)
+    for column in ("home_team_id", "away_team_id"):
+        coerced[column] = coerced[column].astype("Int64")
+    return coerced
 
 
 def _require_utc_timestamp(value: Any, *, field_name: str) -> pd.Timestamp:
