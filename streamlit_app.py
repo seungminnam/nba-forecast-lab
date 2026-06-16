@@ -16,6 +16,7 @@ from nba_forecast.application.forecast_retrospective import (
     build_forecast_retrospective,
 )
 from nba_forecast.application.model_performance import build_model_performance_report
+from nba_forecast.application.season_outlook import run_season_outlook
 from nba_forecast.application.series_replay import (
     SeriesReplayInput,
     SeriesReplayOutput,
@@ -23,6 +24,7 @@ from nba_forecast.application.series_replay import (
 )
 from nba_forecast.application.simulator_lab import SimulatorLabInput, run_simulator_lab
 from nba_forecast.models.artifacts import ModelBundle, load_model_bundle
+from nba_forecast.simulation.season import SeasonOutlookResult
 
 GAMES_PATH = Path("data/snapshots/2026-06-10/games.parquet")
 MODEL_PATH = Path("data/snapshots/2026-06-10/2026-06-11-recent5-raw.joblib")
@@ -82,6 +84,18 @@ def _load_games(path: str) -> pd.DataFrame:
 @st.cache_resource
 def _load_model(path: str) -> ModelBundle:
     return load_model_bundle(Path(path))
+
+
+@st.cache_data
+def _run_season_outlook(
+    games_path: str, simulations: int, home_advantage: float, seed: int
+) -> SeasonOutlookResult:
+    return run_season_outlook(
+        Path(games_path),
+        simulations=simulations,
+        home_advantage=home_advantage,
+        seed=seed,
+    )
 
 
 @st.cache_resource
@@ -373,11 +387,12 @@ def _render_daily_forecasts_tab() -> None:
         st.error(f"Daily forecast report could not be loaded: {error}")
 
 
-daily_tab, replay_tab, assumption_tab, performance_tab, methodology_tab = st.tabs(
+daily_tab, replay_tab, assumption_tab, outlook_tab, performance_tab, methodology_tab = st.tabs(
     [
         "Daily Forecasts",
         "Series Replay",
         "Assumption Lab",
+        "2026-27 Outlook",
         "Model Performance",
         "Methodology",
     ]
@@ -691,6 +706,114 @@ with assumption_tab:
             reconstruct observed history.
             """
         )
+
+with outlook_tab:
+    st.markdown(
+        """
+        <div class="notice"><strong>2026-27 Season Outlook.</strong>
+        Off-season win projection using end-of-season Elo ratings and Monte Carlo
+        simulation. No roster moves, trades, or injuries are modeled — this is a
+        baseline strength estimate only.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.expander("Advanced settings"):
+        _adv = st.columns(2)
+        _outlook_sims = _adv[0].select_slider(
+            "Simulations",
+            options=[1_000, 5_000, 10_000, 25_000],
+            value=10_000,
+            key="outlook_simulations",
+        )
+        _outlook_home_adv = int(
+            _adv[1].slider(
+                "Home court advantage (Elo pts)",
+                min_value=50,
+                max_value=150,
+                value=100,
+                step=10,
+                key="outlook_home_adv",
+            )
+        )
+
+    if GAMES_PATH.exists():
+        _outlook = _run_season_outlook(
+            str(GAMES_PATH),
+            simulations=_outlook_sims,
+            home_advantage=float(_outlook_home_adv),
+            seed=2026,
+        )
+
+        _outlook_rows = [
+            {
+                "Team": p.team_abbreviation,
+                "Conf": p.conference,
+                "Proj. W": f"{p.median_wins:.1f}",
+                "Range": f"{p.win_low}–{p.win_high}",
+                "Playoff %": f"{p.playoff_probability:.0%}",
+            }
+            for p in _outlook.projections
+        ]
+        _outlook_df = pd.DataFrame(_outlook_rows)
+
+        east_col, west_col = st.columns(2)
+        with east_col:
+            st.subheader("Eastern Conference")
+            st.dataframe(
+                _outlook_df[_outlook_df["Conf"] == "East"].drop(columns=["Conf"]),
+                hide_index=True,
+                width="stretch",
+            )
+        with west_col:
+            st.subheader("Western Conference")
+            st.dataframe(
+                _outlook_df[_outlook_df["Conf"] == "West"].drop(columns=["Conf"]),
+                hide_index=True,
+                width="stretch",
+            )
+
+        _chart_data = pd.DataFrame(
+            {
+                "Team": [p.team_abbreviation for p in _outlook.projections],
+                "Projected Wins": [p.median_wins for p in _outlook.projections],
+                "Conference": [p.conference for p in _outlook.projections],
+            }
+        )
+        _outlook_chart = (
+            alt.Chart(_chart_data)
+            .mark_bar(cornerRadiusTopLeft=3, cornerRadiusTopRight=3)
+            .encode(
+                x=alt.X("Team:N", sort="-y", axis=alt.Axis(labelAngle=-45)),
+                y=alt.Y(
+                    "Projected Wins:Q",
+                    scale=alt.Scale(domain=[20, 70]),
+                    title="Projected Wins (82-game)",
+                ),
+                color=alt.Color(
+                    "Conference:N",
+                    scale=alt.Scale(
+                        domain=["East", "West"], range=["#2DD4BF", "#818CF8"]
+                    ),
+                    legend=alt.Legend(orient="top-right"),
+                ),
+                tooltip=[
+                    alt.Tooltip("Team:N"),
+                    alt.Tooltip("Projected Wins:Q", format=".1f"),
+                    alt.Tooltip("Conference:N"),
+                ],
+            )
+            .properties(height=300, title="2026-27 Projected Win Totals")
+        )
+        st.altair_chart(_dark_chart(_outlook_chart), use_container_width=True)
+
+        st.caption(
+            f"Elo-based Monte Carlo · {_outlook.simulations:,} simulations · "
+            f"Snapshot: {SNAPSHOT_DATE} · No roster changes modeled"
+        )
+    else:
+        st.info("Games snapshot not found — season outlook unavailable.")
 
 with performance_tab:
     st.markdown(

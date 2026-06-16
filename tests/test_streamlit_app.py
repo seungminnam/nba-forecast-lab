@@ -24,6 +24,7 @@ def test_streamlit_app_renders_simulator_results() -> None:
         "Daily Forecasts",
         "Series Replay",
         "Assumption Lab",
+        "2026-27 Outlook",
         "Model Performance",
         "Methodology",
     ]
@@ -99,6 +100,7 @@ def test_streamlit_app_has_daily_forecasts_tab_first() -> None:
         "Daily Forecasts",
         "Series Replay",
         "Assumption Lab",
+        "2026-27 Outlook",
         "Model Performance",
         "Methodology",
     ]
@@ -193,7 +195,7 @@ def test_daily_forecasts_tab_shows_selected_date_missing_guidance(
 def test_model_performance_tab_renders_documented_metrics_and_tables() -> None:
     app = _run_app()
 
-    performance_tab = app.tabs[3]
+    performance_tab = app.tabs[4]
     metric_labels = [metric.label for metric in performance_tab.metric]
     assert metric_labels == [
         "Brier Score",
@@ -217,7 +219,7 @@ def test_model_performance_tab_renders_documented_metrics_and_tables() -> None:
 def test_methodology_tab_renders_expected_sections() -> None:
     app = _run_app()
 
-    methodology_tab = app.tabs[4]
+    methodology_tab = app.tabs[5]
     expander_labels = [expander.label for expander in methodology_tab.expander]
     assert expander_labels == [
         "Research Question",
