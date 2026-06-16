@@ -89,8 +89,9 @@ def _outlook_html_table(projections: list, conf: str) -> str:
         if proj.conference != conf:
             continue
         logo = _team_logo_url(proj.team_abbreviation)
+        onerror = "this.style.display='none'"
         logo_tag = (
-            f'<img src="{logo}" class="team-logo" onerror="this.style.display=\'none\'">'
+            f'<img src="{logo}" class="team-logo" onerror="{onerror}">'
             if logo else ""
         )
         rows.append(
@@ -330,7 +331,7 @@ st.markdown(
     <div class="nba-topbar">
       <img src="https://cdn.nba.com/logos/leagues/logo-nba.svg" height="26"
            onerror="this.style.display='none'">
-      <span>NBA FORECAST LAB &nbsp;·&nbsp; Fan project — not affiliated with the NBA</span>
+      <span>NBA FORECAST LAB · Fan project · not affiliated with the NBA</span>
     </div>
     <div class="hero">
       <div class="nba-header-row">
@@ -490,7 +491,10 @@ def _render_daily_forecasts_tab() -> None:
         st.error(f"Daily forecast report could not be loaded: {error}")
 
 
-daily_tab, replay_tab, assumption_tab, outlook_tab, performance_tab, methodology_tab = st.tabs(
+(
+    daily_tab, replay_tab, assumption_tab,
+    outlook_tab, performance_tab, methodology_tab,
+) = st.tabs(
     [
         "Daily Forecasts",
         "Series Replay",

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 
@@ -19,7 +18,7 @@ def run_season_outlook(
     *,
     simulations: int = 10_000,
     home_advantage: float = 100.0,
-    seed: Optional[int] = None,
+    seed: int | None = None,
 ) -> SeasonOutlookResult:
     """Load games parquet, compute final team Elo ratings, run season simulation."""
     games = pd.read_parquet(games_path)
@@ -41,7 +40,7 @@ def compute_final_elos(
     ordered = games.sort_values(["game_date", "game_id"], ignore_index=True)
     ratings: dict[int, float] = {}
     id_to_abbr: dict[int, str] = {}
-    current_season: Optional[str] = None
+    current_season: str | None = None
 
     for row in ordered.itertuples(index=False):
         season_key = str(row.season_key)
