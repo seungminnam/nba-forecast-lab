@@ -35,7 +35,7 @@
 - Create: `tests/application/test_daily_dashboard.py`
 - Create: `src/nba_forecast/application/daily_dashboard.py`
 
-- [ ] **Step 1: Write failing loader tests**
+- [x] **Step 1: Write failing loader tests**
 
 Create `tests/application/test_daily_dashboard.py` with tests for:
 
@@ -158,7 +158,7 @@ def test_load_daily_report_rejects_non_complementary_probabilities(tmp_path: Pat
         load_daily_report(path)
 ```
 
-- [ ] **Step 2: Run loader tests and verify RED**
+- [x] **Step 2: Run loader tests and verify RED**
 
 Run:
 
@@ -169,7 +169,7 @@ Run:
 Expected: collection fails because `nba_forecast.application.daily_dashboard`
 does not exist.
 
-- [ ] **Step 3: Implement minimal loader service**
+- [x] **Step 3: Implement minimal loader service**
 
 Create `src/nba_forecast/application/daily_dashboard.py` with:
 
@@ -314,7 +314,7 @@ def _parse_datetime(value: Any) -> datetime:
     return timestamp.to_pydatetime()
 ```
 
-- [ ] **Step 4: Run loader tests and verify GREEN**
+- [x] **Step 4: Run loader tests and verify GREEN**
 
 Run:
 
@@ -326,7 +326,7 @@ Run:
 
 Expected: all pass.
 
-- [ ] **Step 5: Commit Task 1**
+- [x] **Step 5: Commit Task 1**
 
 ```bash
 git add src/nba_forecast/application/daily_dashboard.py \
