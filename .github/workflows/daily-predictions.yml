@@ -1,0 +1,66 @@
+name: Daily predictions
+
+# Disabled until 2026-27 season-setup is complete (see ADR 0007).
+# To enable: uncomment the schedule block and update SNAPSHOT_DIR below.
+on:
+  # schedule:
+  #   - cron: '0 11 * * *'  # 11:00 UTC = 7:00 AM ET, before afternoon tip-offs
+  workflow_dispatch:
+    inputs:
+      prediction_date:
+        description: 'Date to predict (YYYY-MM-DD, defaults to today UTC)'
+        required: false
+
+env:
+  # Update this to the new snapshot directory each time the model is retrained.
+  SNAPSHOT_DIR: data/snapshots/2026-06-10
+
+jobs:
+  predict:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install package
+        run: python -m pip install -e .
+
+      - name: Resolve prediction date
+        id: date
+        env:
+          INPUT_DATE: ${{ github.event.inputs.prediction_date }}
+        run: |
+          echo "value=${INPUT_DATE:-$(date -u +%Y-%m-%d)}" >> "$GITHUB_OUTPUT"
+
+      - name: Run daily predictions
+        env:
+          PREDICTION_DATE: ${{ steps.date.outputs.value }}
+        run: |
+          nba-forecast predict-daily \
+            --schedule-parquet "$SNAPSHOT_DIR/schedule.parquet" \
+            --games-parquet "$SNAPSHOT_DIR/games.parquet" \
+            --model-bundle "$SNAPSHOT_DIR"/2026-06-11-recent5-raw.joblib \
+            --prediction-date "$PREDICTION_DATE" \
+            --registry-dir artifacts/predictions/registry \
+            --output-dir .
+
+      - name: Commit predictions
+        env:
+          PREDICTION_DATE: ${{ steps.date.outputs.value }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add artifacts/predictions/
+          if git diff --cached --quiet; then
+            echo "No new predictions — nothing to commit"
+          else
+            git commit -m "data: daily predictions $PREDICTION_DATE"
+            git push
+          fi
