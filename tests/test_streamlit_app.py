@@ -104,7 +104,10 @@ def test_streamlit_app_has_daily_forecasts_tab_first() -> None:
     ]
 
 
-def test_daily_forecasts_tab_handles_missing_reports() -> None:
+def test_daily_forecasts_tab_handles_missing_reports(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(daily_dashboard, "find_latest_daily_report", lambda _: None)
     app = _run_app()
 
     assert not app.exception
@@ -114,7 +117,7 @@ def test_daily_forecasts_tab_handles_missing_reports() -> None:
         for markdown in daily_tab.markdown
     )
     assert any(
-        "No daily prediction reports found" in info.value
+        "No daily prediction reports are available yet" in info.value
         for info in daily_tab.info
     )
 
@@ -182,8 +185,8 @@ def test_daily_forecasts_tab_shows_selected_date_missing_guidance(
     daily_tab = app.tabs[0]
     assert not app.exception
     assert any(
-        "daily_predictions_2026-10-24.json" in warning.value
-        for warning in daily_tab.warning
+        "No prediction report is available for the selected date" in info.value
+        for info in daily_tab.info
     )
 
 

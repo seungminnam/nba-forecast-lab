@@ -1,0 +1,26 @@
+{
+  "prediction_date": "2026-06-13",
+  "prediction_timestamp": "2026-06-11T06:00:00+00:00",
+  "schedule_snapshot_at_utc": "2026-06-11T06:00:00+00:00",
+  "total_schedule_rows": 1,
+  "eligible_game_count": 1,
+  "excluded_game_count": 0,
+  "predictions": [
+    {
+      "matchup": {
+        "game_id": "0042500405",
+        "game_date": "2026-06-13",
+        "season_type": "Playoffs",
+        "season_key": "2025-26",
+        "home_team_id": 1610612759,
+        "away_team_id": 1610612752,
+        "home_team_abbreviation": "SAS",
+        "away_team_abbreviation": "NYK"
+      },
+      "home_win_probability": 0.5456951089249971,
+      "away_win_probability": 0.4543048910750029,
+      "model_version": "2026-06-11-recent5-raw",
+      "feature_version": "model-features-v1"
+    }
+  ]
+}
