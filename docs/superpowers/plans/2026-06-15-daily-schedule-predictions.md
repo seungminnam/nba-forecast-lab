@@ -56,7 +56,7 @@ DuckDB, argparse, pytest
 - Create: `tests/data/test_source_schedule.py`
 - Create: `src/nba_forecast/data/source_schedule.py`
 
-- [ ] **Step 1: Write failing immutable-snapshot tests**
+- [x] **Step 1: Write failing immutable-snapshot tests**
 
 Use an injected fetcher and fixed UTC timestamps:
 
@@ -82,7 +82,7 @@ source columns. Add failures proving:
 - missing or invalid adjacent metadata is rejected by
   `load_schedule_snapshot_context`
 
-- [ ] **Step 2: Run source tests and verify RED**
+- [x] **Step 2: Run source tests and verify RED**
 
 Run:
 
@@ -93,7 +93,7 @@ Run:
 Expected: collection fails because `nba_forecast.data.source_schedule` does not
 exist.
 
-- [ ] **Step 3: Implement the minimal schedule source adapter**
+- [x] **Step 3: Implement the minimal schedule source adapter**
 
 Define:
 
@@ -134,7 +134,7 @@ Validate the season with the existing season-key contract. Normalize
 existing CSV or metadata path before fetching or writing. Write temporary CSV
 and metadata files, then replace only the new target paths.
 
-- [ ] **Step 4: Run source tests and verify GREEN**
+- [x] **Step 4: Run source tests and verify GREEN**
 
 Run:
 
@@ -144,7 +144,7 @@ Run:
 
 Expected: all source tests pass without network access.
 
-- [ ] **Step 5: Commit Task 1**
+- [x] **Step 5: Commit Task 1**
 
 ```bash
 git add src/nba_forecast/data/source_schedule.py \
