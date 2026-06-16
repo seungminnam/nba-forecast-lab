@@ -359,7 +359,7 @@ git commit -m "feat: persist scheduled matchups"
 - Create: `tests/application/test_daily_predictions.py`
 - Create: `src/nba_forecast/application/daily_predictions.py`
 
-- [ ] **Step 1: Write failing eligibility tests**
+- [x] **Step 1: Write failing eligibility tests**
 
 Test:
 
@@ -387,7 +387,7 @@ of a naive prediction timestamp. The selector accepts an empty canonical table
 and returns an empty selection; the batch application handles the stronger
 audit requirement below.
 
-- [ ] **Step 2: Run eligibility tests and verify RED**
+- [x] **Step 2: Run eligibility tests and verify RED**
 
 Run:
 
@@ -398,7 +398,7 @@ Run:
 Expected: collection fails because
 `nba_forecast.application.daily_predictions` does not exist.
 
-- [ ] **Step 3: Implement eligibility selection**
+- [x] **Step 3: Implement eligibility selection**
 
 Define:
 
@@ -414,7 +414,7 @@ def select_daily_matchups(
 Validate the complete schedule first. Normalize the prediction timestamp to
 UTC. Apply every approved eligibility rule and return a sorted copy.
 
-- [ ] **Step 4: Write failing daily batch tests**
+- [x] **Step 4: Write failing daily batch tests**
 
 Monkeypatch `predict_scheduled_matchup` with a deterministic test scorer and
 test:
@@ -451,7 +451,7 @@ Assert:
   unchanged
 - schedule snapshot timestamps are included in the batch report
 
-- [ ] **Step 5: Run batch tests and verify RED**
+- [x] **Step 5: Run batch tests and verify RED**
 
 Run:
 
@@ -461,7 +461,7 @@ Run:
 
 Expected: failure because `run_daily_predictions` is missing.
 
-- [ ] **Step 6: Implement the atomic batch application**
+- [x] **Step 6: Implement the atomic batch application**
 
 Define:
 
@@ -497,7 +497,7 @@ on a deep candidate registry copy, convert each eligible row to
 `predict_scheduled_matchup` with the shared date and timestamp, then call
 `register_prediction`. Return only after the entire loop succeeds.
 
-- [ ] **Step 7: Run application tests and verify GREEN**
+- [x] **Step 7: Run application tests and verify GREEN**
 
 Run:
 
@@ -507,7 +507,7 @@ Run:
 
 Expected: all daily application tests pass.
 
-- [ ] **Step 8: Commit Task 4**
+- [x] **Step 8: Commit Task 4**
 
 ```bash
 git add src/nba_forecast/application/daily_predictions.py \
