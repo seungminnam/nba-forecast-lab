@@ -3,10 +3,9 @@
 NBA Forecast Lab is a documentation-first, end-to-end machine learning project
 for calibrated NBA pre-game win probabilities and playoff series simulation.
 
-The project is under active development. The repository now provides a
-reproducible historical data pipeline, leakage-safe pre-game features, and
-time-aware baseline evaluation. No historical model performance claim is made
-until the full multi-season experiment is run.
+The pipeline is reproducible, the model is leakage-safe and measured on
+held-out data, and the results are deployed as an interactive Streamlit
+dashboard.
 
 ## Research Question
 
@@ -16,23 +15,22 @@ until the full multi-season experiment is run.
 
 ## Live Demo
 
-The dashboard is not yet deployed. Once deployed to Streamlit Community Cloud
-(see `docs/runbook.md`), this section will link to the public app URL.
+**[nba-forecast-lab.streamlit.app](https://nba-forecast-lab.streamlit.app/)**
 
-The deployed app will use the frozen `data/snapshots/2026-06-10/` data and
-model snapshot (see
-[ADR 0004](docs/decisions/0004-frozen-snapshot-deployment.md)) and will not
-reflect games played after June 10-11, 2026 until manually redeployed with a
-refreshed snapshot.
+The deployed app uses the frozen `data/snapshots/2026-06-10/` data and model
+snapshot (see [ADR 0004](docs/decisions/0004-frozen-snapshot-deployment.md)).
+It reflects games and predictions through June 10-11, 2026 and will not update
+until manually redeployed with a refreshed snapshot.
 
-## Planned Product
+## What This Demonstrates
 
 - Leakage-safe team features and time-aware validation
-- Elo, Logistic Regression, and XGBoost probability comparisons
-- Probability calibration using Platt scaling and Isotonic Regression
-- `as_of_date` historical replay
-- Best-of-seven Monte Carlo simulations
-- A deployed Streamlit dashboard
+- Elo, Logistic Regression, and XGBoost model comparison on held-out data
+- Probability calibration selection using chronological validation halves
+- `as_of_date` historical replay with model-backed playoff series simulation
+- Immutable forward prediction registry with auditable settlement
+- Manual daily schedule prediction workflow and interactive forecast viewer
+- Deployed Streamlit dashboard with historical, simulation, and performance tabs
 
 ## Current Architecture
 
@@ -262,7 +260,9 @@ and `docs/runbook.md`.
 
 ## Dashboard UI
 
-The interactive product surface is available locally:
+The interactive product surface is deployed at
+**[nba-forecast-lab.streamlit.app](https://nba-forecast-lab.streamlit.app/)**
+and available locally:
 
 ```bash
 source .venv/bin/activate
@@ -423,10 +423,17 @@ model remains trained and evaluated on regular-season games only.
 - [Selected probability model card](docs/model_card.md)
 - [Series simulation contract](docs/decisions/0002-series-simulation-contract.md)
 - [As-of matchup prediction contract](docs/decisions/0003-as-of-matchup-prediction-contract.md)
+- [Frozen snapshot deployment](docs/decisions/0004-frozen-snapshot-deployment.md)
+- [Immutable prediction registry](docs/decisions/0005-immutable-prediction-registry.md)
+- [Schedule source and daily horizon](docs/decisions/0006-schedule-source-and-daily-horizon.md)
 - [Simulator Lab UI design](docs/superpowers/specs/2026-06-11-simulator-lab-ui-design.md)
 - [Playoff data continuity design](docs/superpowers/specs/2026-06-11-playoff-data-continuity-design.md)
 - [Model-backed series replay design](docs/superpowers/specs/2026-06-11-model-backed-series-replay-design.md)
 - [Dashboard deployment and performance/methodology design](docs/superpowers/specs/2026-06-13-dashboard-deployment-design.md)
+- [Prediction registry design](docs/superpowers/specs/2026-06-15-prediction-registry-design.md)
+- [Daily schedule predictions design](docs/superpowers/specs/2026-06-15-daily-schedule-predictions-design.md)
+- [Finals retrospective and playoff backtest design](docs/superpowers/specs/2026-06-15-finals-retrospective-and-playoff-backtest-design.md)
+- [Daily forecasts dashboard design](docs/superpowers/specs/2026-06-16-daily-forecasts-dashboard-design.md)
 
 ## Attribution and Limitations
 
