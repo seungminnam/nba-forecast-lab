@@ -1,18 +1,11 @@
 """Tests for season win projection simulation and Elo computation."""
 
-from datetime import date
-from pathlib import Path
-
 import pandas as pd
-import pytest
 
-from nba_forecast.application.season_outlook import compute_final_elos, run_season_outlook
+from nba_forecast.application.season_outlook import compute_final_elos
 from nba_forecast.simulation.season import (
     _EAST_TEAMS,
-    _PLAYOFF_SEATS,
     _WEST_TEAMS,
-    SeasonOutlookResult,
-    TeamProjection,
     simulate_season,
 )
 

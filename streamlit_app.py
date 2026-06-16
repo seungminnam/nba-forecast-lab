@@ -76,6 +76,44 @@ def _format_percent(value: float) -> str:
     return f"{value:.1%}"
 
 
+def _team_logo_url(abbr: str) -> str:
+    team_id = _NBA_TEAM_IDS.get(abbr.upper())
+    if team_id is None:
+        return ""
+    return f"https://cdn.nba.com/logos/nba/{team_id}/primary/L/logo.svg"
+
+
+def _outlook_html_table(projections: list, conf: str) -> str:
+    rows = []
+    for proj in projections:
+        if proj.conference != conf:
+            continue
+        logo = _team_logo_url(proj.team_abbreviation)
+        onerror = "this.style.display='none'"
+        logo_tag = (
+            f'<img src="{logo}" class="team-logo" onerror="{onerror}">'
+            if logo else ""
+        )
+        rows.append(
+            f"<tr>"
+            f"<td><div class='team-cell'>{logo_tag}"
+            f"<span>{proj.team_abbreviation}</span></div></td>"
+            f"<td>{proj.median_wins:.1f}</td>"
+            f"<td>{proj.win_low}–{proj.win_high}</td>"
+            f"<td>{proj.playoff_probability:.0%}</td>"
+            f"</tr>"
+        )
+    header = (
+        "<table class='outlook-table'>"
+        "<thead><tr>"
+        "<th>Team</th><th>Proj. W</th><th>Range</th><th>Playoff %</th>"
+        "</tr></thead>"
+        f"<tbody>{''.join(rows)}</tbody>"
+        "</table>"
+    )
+    return header
+
+
 @st.cache_data
 def _load_games(path: str) -> pd.DataFrame:
     return pd.read_parquet(path)
@@ -228,6 +266,61 @@ st.markdown(
         padding: 18px 2px 8px;
     }
     .footer a { color: #5EEAD4; text-decoration: none; }
+    .nba-topbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: linear-gradient(90deg, #C8102E 0%, #1D428A 100%);
+        padding: 9px 20px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        font-size: .78rem;
+        color: #fff;
+        font-weight: 600;
+        letter-spacing: .06em;
+    }
+    .nba-topbar span { opacity: .85; }
+    .nba-header-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 4px;
+    }
+    .nba-header-row img {
+        filter: drop-shadow(0 2px 6px rgba(0,0,0,.5));
+        flex-shrink: 0;
+    }
+    .nba-header-row h1 { margin: 2px 0 6px; }
+    .outlook-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .88rem;
+        margin-top: 4px;
+    }
+    .outlook-table th {
+        color: #9CA3AF;
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .10em;
+        padding: 6px 10px;
+        border-bottom: 1px solid #2A3038;
+        text-align: left;
+        text-transform: uppercase;
+    }
+    .outlook-table td {
+        padding: 7px 10px;
+        border-bottom: 1px solid #1C2128;
+        color: #F7FAFC;
+        vertical-align: middle;
+    }
+    .outlook-table tr:hover td { background: rgba(45,212,191,.06); }
+    .team-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+    }
+    .team-logo { width: 30px; height: 30px; object-fit: contain; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -235,9 +328,20 @@ st.markdown(
 
 st.markdown(
     """
+    <div class="nba-topbar">
+      <img src="https://cdn.nba.com/logos/leagues/logo-nba.svg" height="26"
+           onerror="this.style.display='none'">
+      <span>NBA FORECAST LAB · Fan project · not affiliated with the NBA</span>
+    </div>
     <div class="hero">
-      <div class="eyebrow">NBA FORECAST LAB</div>
-      <h1>NBA Game Forecasting Lab</h1>
+      <div class="nba-header-row">
+        <img src="https://cdn.nba.com/logos/leagues/logo-nba.svg" height="52"
+             onerror="this.style.display='none'">
+        <div>
+          <div class="eyebrow">NBA FORECAST LAB</div>
+          <h1>NBA Game Forecasting Lab</h1>
+        </div>
+      </div>
       <p>Game-level win probabilities built on historical NBA data. Inspect
       frozen model predictions, replay past playoff series, and run custom
       series simulations.</p>
@@ -387,7 +491,10 @@ def _render_daily_forecasts_tab() -> None:
         st.error(f"Daily forecast report could not be loaded: {error}")
 
 
-daily_tab, replay_tab, assumption_tab, outlook_tab, performance_tab, methodology_tab = st.tabs(
+(
+    daily_tab, replay_tab, assumption_tab,
+    outlook_tab, performance_tab, methodology_tab,
+) = st.tabs(
     [
         "Daily Forecasts",
         "Series Replay",
@@ -746,32 +853,18 @@ with outlook_tab:
             seed=2026,
         )
 
-        _outlook_rows = [
-            {
-                "Team": p.team_abbreviation,
-                "Conf": p.conference,
-                "Proj. W": f"{p.median_wins:.1f}",
-                "Range": f"{p.win_low}–{p.win_high}",
-                "Playoff %": f"{p.playoff_probability:.0%}",
-            }
-            for p in _outlook.projections
-        ]
-        _outlook_df = pd.DataFrame(_outlook_rows)
-
         east_col, west_col = st.columns(2)
         with east_col:
             st.subheader("Eastern Conference")
-            st.dataframe(
-                _outlook_df[_outlook_df["Conf"] == "East"].drop(columns=["Conf"]),
-                hide_index=True,
-                width="stretch",
+            st.markdown(
+                _outlook_html_table(_outlook.projections, "East"),
+                unsafe_allow_html=True,
             )
         with west_col:
             st.subheader("Western Conference")
-            st.dataframe(
-                _outlook_df[_outlook_df["Conf"] == "West"].drop(columns=["Conf"]),
-                hide_index=True,
-                width="stretch",
+            st.markdown(
+                _outlook_html_table(_outlook.projections, "West"),
+                unsafe_allow_html=True,
             )
 
         _chart_data = pd.DataFrame(

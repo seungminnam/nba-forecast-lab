@@ -5,7 +5,6 @@ from __future__ import annotations
 import random
 import statistics
 from dataclasses import dataclass
-from typing import Optional
 
 _PLAYOFF_SEATS = 10  # top 10 per conference (auto + play-in)
 _SEASON_GAMES = 82
@@ -42,7 +41,7 @@ def simulate_season(
     *,
     simulations: int = 10_000,
     home_advantage: float = 100.0,
-    seed: Optional[int] = None,
+    seed: int | None = None,
 ) -> SeasonOutlookResult:
     """Monte Carlo 82-game season projection from end-of-season Elo ratings.
 
