@@ -1,3 +1,4 @@
+from datetime import date, datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -5,7 +6,7 @@ import pandas as pd
 import pytest
 from streamlit.testing.v1 import AppTest
 
-from nba_forecast.application import series_replay
+from nba_forecast.application import daily_dashboard, series_replay
 from nba_forecast.models import artifacts
 
 APP_PATH = Path(__file__).parents[1] / "streamlit_app.py"
@@ -20,6 +21,7 @@ def test_streamlit_app_renders_simulator_results() -> None:
 
     assert not app.exception
     assert [tab.label for tab in app.tabs] == [
+        "Daily Forecasts",
         "Model-Backed Historical Replay",
         "Assumption Lab",
         "Model Performance",
@@ -27,7 +29,8 @@ def test_streamlit_app_renders_simulator_results() -> None:
     ]
     assert any("NBA FORECAST LAB" in markdown.value for markdown in app.markdown)
     assert any("Assumption-based demo" in markdown.value for markdown in app.markdown)
-    assert app.metric[0].label == "Knicks series win"
+    assumption_tab = app.tabs[2]
+    assert assumption_tab.metric[0].label == "Knicks series win"
     assert {
         "Replay context",
         "Series assumptions",
@@ -71,7 +74,7 @@ def test_streamlit_app_renders_actual_next_game_forecast_and_fair_odds(
     )
     app = _run_app()
 
-    app.button[0].click().run()
+    app.button[1].click().run()
 
     assert not app.exception
     assert any(
@@ -88,11 +91,12 @@ def test_streamlit_app_renders_actual_next_game_forecast_and_fair_odds(
     )
 
 
-def test_streamlit_app_has_four_tabs() -> None:
+def test_streamlit_app_has_daily_forecasts_tab_first() -> None:
     app = _run_app()
 
     assert not app.exception
     assert [tab.label for tab in app.tabs] == [
+        "Daily Forecasts",
         "Model-Backed Historical Replay",
         "Assumption Lab",
         "Model Performance",
@@ -100,10 +104,93 @@ def test_streamlit_app_has_four_tabs() -> None:
     ]
 
 
+def test_daily_forecasts_tab_handles_missing_reports() -> None:
+    app = _run_app()
+
+    assert not app.exception
+    daily_tab = app.tabs[0]
+    assert any(
+        "Manual local workflow" in markdown.value
+        for markdown in daily_tab.markdown
+    )
+    assert any(
+        "No daily prediction reports found" in info.value
+        for info in daily_tab.info
+    )
+
+
+def test_daily_forecasts_tab_renders_latest_report(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        daily_dashboard,
+        "find_latest_daily_report",
+        lambda _: Path("latest.json"),
+    )
+    monkeypatch.setattr(
+        daily_dashboard,
+        "load_daily_report",
+        lambda _: _daily_report([_daily_game()]),
+    )
+
+    app = _run_app()
+
+    daily_tab = app.tabs[0]
+    assert not app.exception
+    assert any(
+        metric.label == "Eligible games" and metric.value == "1"
+        for metric in daily_tab.metric
+    )
+    assert any(
+        metric.label == "Predictions" and metric.value == "1"
+        for metric in daily_tab.metric
+    )
+    assert any("SAS at NYK" in markdown.value for markdown in daily_tab.markdown)
+    assert any("NYK 58.4%" in markdown.value for markdown in daily_tab.markdown)
+
+
+def test_daily_forecasts_tab_renders_no_game_report(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        daily_dashboard,
+        "find_latest_daily_report",
+        lambda _: Path("latest.json"),
+    )
+    monkeypatch.setattr(
+        daily_dashboard,
+        "load_daily_report",
+        lambda _: _daily_report([]),
+    )
+
+    app = _run_app()
+
+    daily_tab = app.tabs[0]
+    assert not app.exception
+    assert any("No eligible games" in info.value for info in daily_tab.info)
+
+
+def test_daily_forecasts_tab_shows_selected_date_missing_guidance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(daily_dashboard, "find_latest_daily_report", lambda _: None)
+    app = _run_app()
+
+    app.date_input[0].set_value(date(2026, 10, 24)).run()
+    app.button[0].click().run()
+
+    daily_tab = app.tabs[0]
+    assert not app.exception
+    assert any(
+        "daily_predictions_2026-10-24.json" in warning.value
+        for warning in daily_tab.warning
+    )
+
+
 def test_model_performance_tab_renders_documented_metrics_and_tables() -> None:
     app = _run_app()
 
-    performance_tab = app.tabs[2]
+    performance_tab = app.tabs[3]
     metric_labels = [metric.label for metric in performance_tab.metric]
     assert metric_labels == [
         "Brier Score",
@@ -127,7 +214,7 @@ def test_model_performance_tab_renders_documented_metrics_and_tables() -> None:
 def test_methodology_tab_renders_expected_sections() -> None:
     app = _run_app()
 
-    methodology_tab = app.tabs[3]
+    methodology_tab = app.tabs[4]
     expander_labels = [expander.label for expander in methodology_tab.expander]
     assert expander_labels == [
         "Research Question",
@@ -203,8 +290,8 @@ def test_replay_defaults_match_featured_series() -> None:
     app = _run_app()
 
     assert not app.exception
-    assert app.date_input[0].value == pd.Timestamp("2026-06-11").date()
-    assert app.date_input[1].value == pd.Timestamp("2026-06-13").date()
+    assert app.date_input[1].value == pd.Timestamp("2026-06-11").date()
+    assert app.date_input[2].value == pd.Timestamp("2026-06-13").date()
     assert app.text_input[0].value == "SAS"
     assert app.text_input[1].value == "NYK"
     assert app.number_input[0].value == 1610612759
@@ -266,4 +353,35 @@ def _fake_replay_output() -> SimpleNamespace:
                 "probability": [0.4437, 0.31, 0.2463],
             }
         ),
+    )
+
+
+def _daily_report(
+    predictions: list[daily_dashboard.DailyForecastGame],
+) -> daily_dashboard.DailyForecastReport:
+    games = tuple(predictions)
+    return daily_dashboard.DailyForecastReport(
+        path=Path("artifacts/predictions/daily_predictions_2026-10-22.json"),
+        prediction_date=date(2026, 10, 22),
+        prediction_timestamp=datetime(2026, 10, 22, 12, tzinfo=timezone.utc),
+        schedule_snapshot_at_utc=datetime(2026, 10, 22, 6, tzinfo=timezone.utc),
+        total_schedule_rows=3,
+        eligible_game_count=len(games),
+        excluded_game_count=3 - len(games),
+        games=games,
+    )
+
+
+def _daily_game() -> daily_dashboard.DailyForecastGame:
+    return daily_dashboard.DailyForecastGame(
+        game_id="0022600001",
+        matchup_label="SAS at NYK",
+        game_date=date(2026, 10, 22),
+        season_type="Regular Season",
+        model_version="2026-06-11-recent5-raw",
+        feature_version="model-features-v1",
+        home_team_abbreviation="NYK",
+        away_team_abbreviation="SAS",
+        home_win_probability=0.584,
+        away_win_probability=0.416,
     )

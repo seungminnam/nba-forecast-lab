@@ -1,11 +1,16 @@
 """Interactive product surface for NBA Forecast Lab."""
 
+from __future__ import annotations
+
+from datetime import date
 from pathlib import Path
 
 import altair as alt
 import pandas as pd
 import streamlit as st
 
+from nba_forecast.application import daily_dashboard
+from nba_forecast.application.daily_dashboard import DailyForecastReport
 from nba_forecast.application.forecast_retrospective import (
     ForecastOutcome,
     build_forecast_retrospective,
@@ -21,6 +26,7 @@ from nba_forecast.models.artifacts import ModelBundle, load_model_bundle
 
 GAMES_PATH = Path("data/snapshots/2026-06-10/games.parquet")
 MODEL_PATH = Path("data/snapshots/2026-06-10/2026-06-11-recent5-raw.joblib")
+PREDICTIONS_DIR = Path("artifacts/predictions")
 SNAPSHOT_DATE = "2026-06-10"
 GITHUB_URL = "https://github.com/seungminnam/nba-forecast-lab"
 FEATURED_SERIES = SeriesReplayInput(
@@ -50,6 +56,10 @@ FEATURED_OUTCOME = ForecastOutcome(
 
 def _format_american_odds(odds: int) -> str:
     return f"+{odds}" if odds > 0 else str(odds)
+
+
+def _format_percent(value: float) -> str:
+    return f"{value:.1%}"
 
 
 @st.cache_data
@@ -272,14 +282,112 @@ if featured_retrospective is not None:
         unsafe_allow_html=True,
     )
 
-replay_tab, assumption_tab, performance_tab, methodology_tab = st.tabs(
+
+def _render_daily_missing_state(expected_path: Path | None = None) -> None:
+    if expected_path is None:
+        st.info(
+            "No daily prediction reports found. Generate one with "
+            "`nba-forecast predict-daily ... --output-dir .`."
+        )
+        return
+    st.warning(
+        f"No report found at `{expected_path}`. Generate it with "
+        "`nba-forecast predict-daily ... --prediction-date YYYY-MM-DD`."
+    )
+
+
+def _render_daily_report(report: DailyForecastReport) -> None:
+    st.subheader(f"Daily Forecasts · {report.prediction_date.isoformat()}")
+    st.caption(f"Report: `{report.path}`")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Eligible games", str(report.eligible_game_count))
+    col2.metric("Predictions", str(report.prediction_count))
+    col3.metric("Excluded rows", str(report.excluded_game_count))
+    model_label = (
+        ", ".join(report.model_versions)
+        if report.model_versions
+        else "No predictions"
+    )
+    col4.metric("Model", model_label)
+    st.caption(
+        "Prediction timestamp: "
+        f"{report.prediction_timestamp.isoformat()} · Schedule snapshot: "
+        f"{report.schedule_snapshot_at_utc.isoformat()}"
+    )
+    if not report.games:
+        st.info("No eligible games were available for this report date.")
+        return
+    for game in report.games:
+        home_probability = (
+            f"{game.home_team_abbreviation} "
+            f"{_format_percent(game.home_win_probability)}"
+        )
+        away_probability = (
+            f"{game.away_team_abbreviation} "
+            f"{_format_percent(game.away_win_probability)}"
+        )
+        st.markdown(
+            f"""
+            <div class="forecast-card">
+              <div class="forecast-label">{game.season_type.upper()}</div>
+              <div class="forecast-matchup">{game.matchup_label}</div>
+              <div class="forecast-probability">
+                {home_probability}
+              </div>
+              <div class="forecast-context">
+                {away_probability}
+                · Game date {game.game_date.isoformat()}
+                · Model {game.model_version}
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
+def _render_daily_forecasts_tab() -> None:
+    st.markdown(
+        """
+        <div class="notice">ℹ️ <strong>Manual local workflow.</strong>
+        This tab reads generated local daily prediction reports. It is not a
+        live feed, not market odds, and not betting advice.</div>
+        """,
+        unsafe_allow_html=True,
+    )
+    latest_path = daily_dashboard.find_latest_daily_report(PREDICTIONS_DIR)
+    selected_date = st.date_input("Inspect report date", value=date.today())
+    load_selected = st.button("Load date report")
+    if load_selected:
+        report_path = daily_dashboard.daily_report_path(
+            PREDICTIONS_DIR,
+            selected_date,
+        )
+        if report_path.exists():
+            _render_daily_report(daily_dashboard.load_daily_report(report_path))
+        else:
+            _render_daily_missing_state(report_path)
+        return
+    if latest_path is None:
+        _render_daily_missing_state()
+        return
+    try:
+        _render_daily_report(daily_dashboard.load_daily_report(latest_path))
+    except daily_dashboard.DailyForecastReportError as error:
+        st.error(f"Daily forecast report could not be loaded: {error}")
+
+
+daily_tab, replay_tab, assumption_tab, performance_tab, methodology_tab = st.tabs(
     [
+        "Daily Forecasts",
         "Model-Backed Historical Replay",
         "Assumption Lab",
         "Model Performance",
         "Methodology",
     ]
 )
+
+with daily_tab:
+    _render_daily_forecasts_tab()
 
 
 def _render_charts(

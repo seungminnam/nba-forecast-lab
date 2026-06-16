@@ -341,7 +341,7 @@ git commit -m "feat: load daily forecast reports"
 - Modify: `streamlit_app.py`
 - Modify: `tests/test_streamlit_app.py`
 
-- [ ] **Step 1: Write failing Streamlit tests**
+- [x] **Step 1: Write failing Streamlit tests**
 
 Extend `tests/test_streamlit_app.py`:
 
@@ -454,7 +454,7 @@ Update existing tab index expectations:
 - Methodology tab index changes from `3` to `4`.
 - Existing tests that count exact tab labels must include `Daily Forecasts`.
 
-- [ ] **Step 2: Run Streamlit tests and verify RED**
+- [x] **Step 2: Run Streamlit tests and verify RED**
 
 Run:
 
@@ -464,7 +464,7 @@ Run:
 
 Expected: failures because the new tab and rendering functions do not exist.
 
-- [ ] **Step 3: Implement Daily Forecasts tab**
+- [x] **Step 3: Implement Daily Forecasts tab**
 
 Modify `streamlit_app.py`:
 
@@ -585,7 +585,7 @@ with daily_tab:
     _render_daily_forecasts_tab()
 ```
 
-- [ ] **Step 4: Run Streamlit tests and verify GREEN**
+- [x] **Step 4: Run Streamlit tests and verify GREEN**
 
 Run:
 
@@ -596,7 +596,7 @@ Run:
 
 Expected: all pass.
 
-- [ ] **Step 5: Commit Task 2**
+- [x] **Step 5: Commit Task 2**
 
 ```bash
 git add streamlit_app.py tests/test_streamlit_app.py \
