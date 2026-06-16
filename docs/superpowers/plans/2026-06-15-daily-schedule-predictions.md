@@ -742,7 +742,7 @@ Run:
 git diff --check
 ```
 
-- [ ] **Step 3: Push and open a Draft PR**
+- [x] **Step 3: Push and open a Draft PR**
 
 Use:
 
