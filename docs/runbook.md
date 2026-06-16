@@ -378,6 +378,76 @@ against the refreshed canonical games table. DuckDB preserved the frozen
 Brier contribution. This verifies the operating workflow; it is not a new
 model-performance claim.
 
+## Run Manual Daily Schedule Predictions
+
+This workflow discovers scheduled games and registers every eligible game on
+one NBA calendar date. It is manual and local; it is not yet a live scheduled
+service.
+
+Fetch an immutable full-season schedule snapshot:
+
+```bash
+nba-forecast fetch-schedule \
+  --season 2026-27 \
+  --cache-dir data/raw
+```
+
+Build the canonical schedule table from a raw snapshot and its adjacent
+metadata:
+
+```bash
+nba-forecast build-schedule \
+  --raw-schedule-csv data/raw/nba_stats/schedule_league_v2/2026-27/<snapshot>.csv \
+  --output-dir data
+```
+
+This writes:
+
+- `data/schedules/scheduled_matchups.parquet`
+- `data/schedules/schedule.duckdb`
+
+Run one daily prediction batch:
+
+```bash
+nba-forecast predict-daily \
+  --schedule-parquet data/schedules/scheduled_matchups.parquet \
+  --games-parquet data/processed/games.parquet \
+  --model-bundle artifacts/models/2026-06-11-recent5-raw.joblib \
+  --prediction-date 2026-10-22 \
+  --registry-dir data/registry \
+  --output-dir .
+```
+
+The batch rejects empty or mixed-snapshot schedule inputs. Eligible rows must
+be on the selected NBA date, not started, not postponed, not conditional, have
+confirmed teams, have a known UTC tip-off, and still be in the future at the
+captured prediction timestamp.
+
+The command writes the complete candidate registry only after every eligible
+game is scored and registered, then writes
+`artifacts/predictions/daily_predictions_<date>.json`.
+
+Inspect local artifacts:
+
+```bash
+python -c "import duckdb; print(duckdb.connect('data/schedules/schedule.duckdb', read_only=True).execute('select game_id, nba_game_date, game_status, has_confirmed_matchup from scheduled_matchups order by nba_game_date, game_id limit 20').fetchdf())"
+python -c "import duckdb; print(duckdb.connect('data/registry/prediction_registry.duckdb', read_only=True).execute('select game_id, prediction_timestamp, model_version, home_win_probability from predictions order by prediction_timestamp, game_id').fetchdf())"
+```
+
+No-game dates write an empty daily report and preserve registry rows. If a
+batch fails before completion, keep the prior registry Parquet and rerun after
+fixing the schedule, model bundle, or completed-game input.
+
+Offline fixture smoke verified on 2026-06-16:
+
+- immutable schedule snapshot path:
+  `/tmp/nba-forecast-daily-smoke/raw/nba_stats/schedule_league_v2/2026-27/20260615T120000.000000Z.csv`
+- fixture schedule build produced `4` canonical scheduled rows
+- fixed-timestamp daily batch registered `1` eligible prediction
+- rerunning the same fixed timestamp kept the registry at `1` row
+- no-game date report recorded `0` eligible predictions
+- schedule and prediction DuckDB tables were queryable
+
 ## Run a Seeded Series Simulation
 
 Run a model-independent engine check with a synthetic probability provider:

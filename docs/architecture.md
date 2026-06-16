@@ -254,3 +254,33 @@ synchronization. `cli.py` only composes those services.
 Parquet is authoritative. DuckDB can be rebuilt from it. The workflow is
 manual and local until future schedule ingestion and daily automation are
 implemented.
+
+## Daily Schedule Prediction Flow
+
+```text
+nba_api ScheduleLeagueV2
+        |
+        v
+immutable timestamped schedule snapshot + metadata
+        |
+        v
+canonical scheduled_matchups table
+        |
+        v
+once-daily eligibility selection by NBA calendar date
+        |
+        v
+predict_scheduled_matchup for each eligible row
+        |
+        v
+candidate registry copy -> atomic local registry write -> JSON batch report
+```
+
+`data/source_schedule.py` owns append-only schedule snapshots.
+`data/schedule_transform.py` owns the canonical scheduled-matchup schema.
+`data/schedule_storage.py` persists validated schedule Parquet and DuckDB
+tables. `application/daily_predictions.py` owns eligibility and atomic batch
+registration. `cli.py` composes the manual workflow.
+
+The workflow is currently local and manual. It does not include GitHub Actions
+cron, hosted persistence, automatic settlement, or live Streamlit daily views.

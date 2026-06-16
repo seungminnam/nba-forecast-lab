@@ -135,6 +135,34 @@ Stored matchup prediction reports include a UTC prediction timestamp,
 `as_of_date`, game identifier, model version, feature version, home and away
 probabilities, the exact feature values used, and a nullable final outcome.
 
+## Canonical Scheduled Matchup Table
+
+`ScheduleLeagueV2` snapshots are normalized into `scheduled_matchups`.
+
+| Column | Type | Meaning |
+|---|---|---|
+| `game_id` | string | NBA scheduled game identifier |
+| `season_id` | string | Derived source season identifier, such as `22026` or `42026` |
+| `season_type` | string | `Regular Season` for `002` games, `Playoffs` for `004` games |
+| `season_key` | string | NBA season continuity key, such as `2026-27` |
+| `schedule_snapshot_at_utc` | UTC timestamp | Immutable schedule fetch timestamp |
+| `nba_game_date` | date | Game date in the NBA's New York calendar |
+| `tipoff_at_utc` | nullable UTC timestamp | Known scheduled tip-off, if available |
+| `game_status` | integer | Source status; only status `1` is daily-prediction eligible |
+| `game_status_text` | string | Source display status text |
+| `is_postponed` | boolean | True when source `postponedStatus` is nonzero |
+| `is_conditional` | boolean | True when source `ifNecessary` indicates a conditional game |
+| `has_confirmed_matchup` | boolean | True only when both team IDs and abbreviations are known |
+| `home_team_id`, `away_team_id` | nullable integer | Scheduled team IDs |
+| `home_team_abbreviation`, `away_team_abbreviation` | nullable string | Scheduled team abbreviations |
+
+Unsupported game prefixes are excluded from the canonical schedule. Incomplete
+supported rows are preserved but are not daily-prediction eligible.
+
+Daily prediction eligibility requires one schedule snapshot, the selected NBA
+date, `game_status == 1`, confirmed teams, a known future tip-off, and no
+postponed or conditional flags.
+
 ## Forward Prediction Registry
 
 One registry row represents one immutable prediction event. The logical event
